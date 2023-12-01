@@ -5,8 +5,16 @@ import path from 'path';
 import chalk from 'chalk';
 import { program } from 'commander';
 import { performance } from 'perf_hooks';
-import { fetchInput, fillString, round } from './util/util.js';
+import { spawn } from 'child_process';
+import { fetchInput, fillString, getInputFilePath, round, textToArray } from './util/util.js';
 import { oraPromise } from "./util/ora.js";
+
+
+const generateCMD = (lang, file, inputPath) => {
+  if (lang === "py") {
+    return ["python3", [file, inputPath]];
+  }
+}
 
 
 program
@@ -25,7 +33,8 @@ program
   .option('-i --input <path>', `specify path to a custom input`)
   .option('-s --short', `only print result without the answer sentence`, false)
   .option('-fd --force-download', `force the download of the input file`)
-  .option('-e --example', `use _example suffixed input`, false);
+  .option('-e --example', `use _example suffixed input`, false)
+  .option('-l --language <language>', 'specify another language', 'js');
 
 program.parse(process.argv);
 
@@ -59,6 +68,7 @@ program.parse(process.argv);
           short: program.short,
           forceDownload: program.forceDownload,
           example: program.example,
+          language: program.language,
         });
 
         console.log(
@@ -79,7 +89,7 @@ Total time: ${round((performance.now() - startTime) / 1000, 3)}s
     }
 
     const pu = (await fs.promises.readdir(p)).find((file) =>
-      file.startsWith(`${(program.day + '').padStart(2, 0)}_`)
+      file.startsWith(`${(program.day + '').padStart(2, 0)}_`) && file.endsWith(`.${program.language}`)
     );
 
     if (
@@ -97,22 +107,23 @@ Total time: ${round((performance.now() - startTime) / 1000, 3)}s
         short: program.short,
         forceDownload: program.forceDownload,
         example: program.example,
+        language: program.language,
       });
     } else if (program.create && !pu) {
       try {
         const template = (
           await fs.promises.readFile(
-            path.resolve('templates', 'puzzle.js'),
+            path.resolve('templates', `puzzle.${program.language}`),
             'utf-8'
           )
         )
-          .replace("'%{year}%'", program.year)
-          .replace("'%{day}%'", program.day);
+          .replaceAll("'{{year}}'", program.year)
+          .replaceAll("'{{day}}'", program.day);
 
         await fs.promises.writeFile(
           path.resolve(
             `${program.year}`,
-            `${('0' + program.day).slice(-2)}_${program.create}.js`
+            `${('0' + program.day).slice(-2)}_${program.create}.${program.language}`
           ),
           template,
           'utf-8'
@@ -149,17 +160,9 @@ async function runPuzzle({
   short,
   forceDownload,
   example,
+  language,
 }) {
-  let day = null;
-  try {
-    day = (await import(`./${year}/${filename}`)).default;
-  } catch (err) {
-    console.error(err);
-    throw new Error('This puzzle was not found or a error occurred.');
-  }
-  if (day === null) throw new Error('This puzzle was not found.');
-
-  const parseInput = async () => {
+  const getInputAsText = async () => {
     let inputText;
 
     if (inputPath) {
@@ -173,6 +176,60 @@ async function runPuzzle({
     } else {
       inputText = await fetchInput(year, d, !forceDownload, true, example);
     }
+
+    return inputText;
+  }
+
+  if (language !== "js") {
+    const programFilePath = path.resolve(".", `${year}`, filename);
+
+    if (!fs.existsSync(programFilePath)) {
+      throw new Error(`This puzzle file was not found at ${programFilePath}.`);
+    }
+
+    const inputPath = getInputFilePath(year, d, example);
+    const cmd = generateCMD(language, programFilePath, inputPath);
+    const cProcess = spawn(...cmd, {});
+
+    let output = "";
+
+    return new Promise((res) => {
+      cProcess.stdout.on("data", (data) => {
+        const line = data.toString("utf-8");
+        output += line;
+        process.stdout.write(data);
+      });
+      cProcess.stderr.pipe(process.stderr);
+
+      cProcess.on("close", (code) => {
+        if (code > 0) return res();
+
+        const lines = textToArray(output);
+        if (lines.length === 2) {
+          res(lines);
+        } else {
+          res();
+        }
+      });
+
+      cProcess.on("error", (err) => {
+        console.error(err);
+        process.exit(1);
+      });
+    });
+  }
+
+  let day = null;
+  try {
+    day = (await import(`./${year}/${filename}`)).default;
+  } catch (err) {
+    console.error(err);
+    throw new Error('This puzzle was not found or a error occurred.');
+  }
+  if (day === null) throw new Error('This puzzle was not found.');
+
+  const parseInput = async () => {
+    const inputText = await getInputAsText();
 
     return day({ input: inputText, flags });
   };
@@ -194,6 +251,8 @@ async function runPuzzle({
     return res.text || res.result;
   };
 
+  const result = [null, null];
+
   if (isNaN(part) || part === 0 || part === 1) {
     if (!short) {
       console.log(chalk.bold('Part 1:'));
@@ -206,6 +265,8 @@ async function runPuzzle({
       args,
       short
     );
+
+    result[0] = res.result;
 
     if (short) {
       console.log(res.result);
@@ -225,8 +286,12 @@ async function runPuzzle({
       short
     );
 
+    result[1] = res.result;
+
     if (short) {
       console.log(res.result);
     }
   }
+
+  return result;
 }

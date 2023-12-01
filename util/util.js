@@ -24,6 +24,22 @@ export const getInput = async (year, day) => {
 };
 
 /**
+ * Get the input path for a specified day
+ * @param {Number} year 
+ * @param {Number} day 
+ * @param {Boolean} example 
+ * @returns 
+ */
+export function getInputFilePath(year, day, example) {
+  const p = path.resolve('.input', `${year}`);
+  const filePath = path.resolve(
+    p,
+    `${example ? `${day}_example` : day}` + '.txt'
+  );
+  return filePath;
+}
+
+/**
  * Get the input by either fetching them or returning the locally cached copy
  * @param {Number} year 
  * @param {Number} day 
@@ -43,11 +59,7 @@ export const fetchInput = async (year, day, cache = true, check = true, example 
     }
   }
 
-  const p = path.resolve('.input', `${year}`);
-  const filePath = path.resolve(
-    p,
-    `${example ? `${day}_example` : day}` + '.txt'
-  );
+  const filePath = getInputFilePath(year, day, example);
 
   if (cache && fs.existsSync(filePath)) {
     return await fs.promises.readFile(filePath, 'utf-8');
