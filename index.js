@@ -34,7 +34,9 @@ program
   .option('-s --short', `only print result without the answer sentence`, false)
   .option('-fd --force-download', `force the download of the input file`)
   .option('-e --example', `use _example suffixed input`, false)
-  .option('-l --language <language>', 'specify another language', 'js');
+  .option('-l --language <language>', 'specify another language', 'js')
+  .option('--no-check', 'ignore check answer with saved answer if existing')
+  .option('-sa --save-answer', 'save the answer of this run for later validation');
 
 program.parse(process.argv);
 
@@ -69,6 +71,8 @@ program.parse(process.argv);
           forceDownload: program.forceDownload,
           example: program.example,
           language: program.language,
+          saveAnswer: program.saveAnswer,
+          check: program.check,
         });
 
         console.log(
@@ -108,6 +112,8 @@ Total time: ${round((performance.now() - startTime) / 1000, 3)}s
         forceDownload: program.forceDownload,
         example: program.example,
         language: program.language,
+        saveAnswer: program.saveAnswer,
+        check: program.check,
       });
     } else if (program.create && !pu) {
       try {
@@ -150,7 +156,59 @@ Total time: ${round((performance.now() - startTime) / 1000, 3)}s
   }
 })();
 
-async function runPuzzle({
+function getAnswerFilePath(year) {
+  return path.resolve(".", ".input", `${year}`, "answers.json");
+}
+
+async function getAnswers(year, day) {
+  const answerFilePath = getAnswerFilePath(year);
+  let answers = {};
+  if (fs.existsSync(answerFilePath)) {
+    answers = JSON.parse(await fs.promises.readFile(answerFilePath));
+  }
+
+  if (day) return answers[day] || [null, null];
+
+  return answers;
+}
+
+async function runPuzzle(args) {
+  const res = await getPuzzleAnswer(args);
+
+  const { day, year } = args;
+
+  if (args.check) {
+    const answers = await getAnswers(year, day);
+
+    const checkPart = (answers, res, i) => {
+      if (!answers[i] || !res[i]) return;
+
+      if (`${answers[i]}` !== `${res[i]}`) {
+        console.log(chalk.red(`❌ Part ${i + 1}: ${res[i]} !== ${answers[i]} (expected)`))
+      }
+    }
+
+    checkPart(answers, res, 0);
+    checkPart(answers, res, 1);
+  }
+
+  if (args.saveAnswer && res) {
+    let currentAnswers = await getAnswers(year)
+
+    if (!(currentAnswers[day])) currentAnswers[day] = [null, null];
+
+    if (res[0]) currentAnswers[day][0] = `${res[0]}`;
+    if (res[1]) currentAnswers[day][1] = `${res[1]}`;
+
+    const answerFilePath = getAnswerFilePath(year);
+    await fs.promises.writeFile(answerFilePath, JSON.stringify(currentAnswers, null, 2), { encoding: "utf-8" });
+
+    console.log(`${chalk.green("✔")} Answers saved for ${chalk.green(year)}/${chalk.green(day)}: ${JSON.stringify(currentAnswers[day])}`);
+  }
+  return res;
+}
+
+async function getPuzzleAnswer({
   year,
   filename,
   part,
