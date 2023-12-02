@@ -6,7 +6,8 @@ import chalk from 'chalk';
 import { program } from 'commander';
 import { performance } from 'perf_hooks';
 import { spawn } from 'child_process';
-import { getInput, fillString, getInputFilePath, round, textToArray } from './util/util.js';
+import { fillString, round, textToArray } from './util/util.js';
+import { getInput, getInputFilePath } from './util/aoc_util.js';
 import { oraPromise } from "./util/ora.js";
 
 
