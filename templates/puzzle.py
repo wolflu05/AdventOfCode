@@ -1,4 +1,4 @@
-import sys
+import sys, collections, re, itertools
 
 inp = []
 with open(sys.argv[1]) as f:
