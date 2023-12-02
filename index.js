@@ -7,7 +7,7 @@ import { program } from 'commander';
 import { performance } from 'perf_hooks';
 import { spawn } from 'child_process';
 import { fillString, round, textToArray } from './util/util.js';
-import { getInput, getInputFilePath } from './util/aoc_util.js';
+import { getAocPuzzleName, getInput, getInputFilePath } from './util/aoc_util.js';
 import { oraPromise } from "./util/ora.js";
 
 
@@ -28,7 +28,7 @@ program
   )
   .option('-d --day <day>', 'day of challenge to run', new Date().getDate())
   .option('-p --part <part>', `part of challenge to run`)
-  .option('-c --create <name>', `create file from template`)
+  .option('-c --create [name]', `create file from template`)
   .option('-a --all', `run all puzzles from one year`)
   .option('-f --flags <flags...>', 'parse flags to the challenge')
   .option('-i --input <path>', `specify path to a custom input`)
@@ -127,10 +127,11 @@ Total time: ${round((performance.now() - startTime) / 1000, 3)}s
           .replaceAll("'{{year}}'", program.year)
           .replaceAll("'{{day}}'", program.day);
 
+        const challengeName = program.create === true ? await getAocPuzzleName(program.year, program.day).then(x => x.replaceAll(/\W/g, "")) : program.create;
         await fs.promises.writeFile(
           path.resolve(
             `${program.year}`,
-            `${('0' + program.day).slice(-2)}_${program.create}.${program.language}`
+            `${('0' + program.day).slice(-2)}_${challengeName}.${program.language}`
           ),
           template,
           'utf-8'
