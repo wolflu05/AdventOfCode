@@ -6,7 +6,7 @@ import chalk from 'chalk';
 import { program } from 'commander';
 import { performance } from 'perf_hooks';
 import { spawn } from 'child_process';
-import { fetchInput, fillString, getInputFilePath, round, textToArray } from './util/util.js';
+import { getInput, fillString, getInputFilePath, round, textToArray } from './util/util.js';
 import { oraPromise } from "./util/ora.js";
 
 
@@ -160,16 +160,24 @@ function getAnswerFilePath(year) {
   return path.resolve(".", ".input", `${year}`, "answers.json");
 }
 
-async function getAnswers(year, day) {
+async function getAnswers(year, key) {
   const answerFilePath = getAnswerFilePath(year);
   let answers = {};
   if (fs.existsSync(answerFilePath)) {
     answers = JSON.parse(await fs.promises.readFile(answerFilePath));
   }
 
-  if (day) return answers[day] || [null, null];
+  if (key) return answers[key] || [null, null];
 
   return answers;
+}
+
+function getSaveKey(args) {
+  let key = `${args.day}`;
+  if (args.example) key += "_example";
+  if (args.inputPath) key += path.resolve(process.cwd(), args.inputPath);
+
+  return key;
 }
 
 async function runPuzzle(args) {
@@ -178,7 +186,7 @@ async function runPuzzle(args) {
   const { day, year } = args;
 
   if (args.check) {
-    const answers = await getAnswers(year, day);
+    const answers = await getAnswers(year, getSaveKey(args));
 
     const checkPart = (answers, res, i) => {
       if (!answers[i] || !res[i]) return;
@@ -193,17 +201,19 @@ async function runPuzzle(args) {
   }
 
   if (args.saveAnswer && res) {
-    let currentAnswers = await getAnswers(year)
+    let currentAnswers = await getAnswers(year);
 
-    if (!(currentAnswers[day])) currentAnswers[day] = [null, null];
+    const key = getSaveKey(args);
 
-    if (res[0]) currentAnswers[day][0] = `${res[0]}`;
-    if (res[1]) currentAnswers[day][1] = `${res[1]}`;
+    if (!(currentAnswers[key])) currentAnswers[key] = [null, null];
+
+    if (res[0]) currentAnswers[key][0] = `${res[0]}`;
+    if (res[1]) currentAnswers[key][1] = `${res[1]}`;
 
     const answerFilePath = getAnswerFilePath(year);
     await fs.promises.writeFile(answerFilePath, JSON.stringify(currentAnswers, null, 2), { encoding: "utf-8" });
 
-    console.log(`${chalk.green("✔")} Answers saved for ${chalk.green(year)}/${chalk.green(day)}: ${JSON.stringify(currentAnswers[day])}`);
+    console.log(`${chalk.green("✔")} Answers saved for ${chalk.green(year)}/${chalk.green(day)}: ${JSON.stringify(currentAnswers[key])}`);
   }
   return res;
 }
@@ -232,7 +242,7 @@ async function getPuzzleAnswer({
         throw new Error(`File "${filePath}" not found.`);
       }
     } else {
-      inputText = await fetchInput(year, d, !forceDownload, true, example);
+      inputText = await getInput(year, d, !forceDownload, true, example);
     }
 
     return inputText;
@@ -245,8 +255,16 @@ async function getPuzzleAnswer({
       throw new Error(`This puzzle file was not found at ${programFilePath}.`);
     }
 
-    const inputPath = getInputFilePath(year, d, example);
-    const cmd = generateCMD(language, programFilePath, inputPath);
+    let fullInputPath = getInputFilePath(year, d, example);
+    if (inputPath) {
+      fullInputPath = path.resolve(process.cwd(), inputPath);
+
+      if (!fs.existsSync(fullInputPath)) {
+        throw new Error(`File "${fullInputPath}" not found.`);
+      }
+    }
+
+    const cmd = generateCMD(language, programFilePath, fullInputPath);
     const cProcess = spawn(...cmd, {});
 
     let output = "";
@@ -324,7 +342,8 @@ async function getPuzzleAnswer({
       short
     );
 
-    result[0] = res.result;
+    // TODO: replace with res
+    result[0] = res.result || res;
 
     if (short) {
       console.log(res.result);
@@ -344,7 +363,8 @@ async function getPuzzleAnswer({
       short
     );
 
-    result[1] = res.result;
+    // TODO: replace with res
+    result[1] = res.result || res;
 
     if (short) {
       console.log(res.result);

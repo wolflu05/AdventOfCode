@@ -11,7 +11,7 @@ import { baseUrl, sessionCookie } from './constants.js';
  * @param {Number} day 
  * @returns {String} input for the specified year/day 
  */
-export const getInput = async (year, day) => {
+export const fetchInput = async (year, day) => {
   const url = `${baseUrl}/${year}/day/${day}/input`;
 
   return await (
@@ -48,7 +48,7 @@ export function getInputFilePath(year, day, example) {
  * @param {Boolean} example use the _example suffixed input file
  * @returns 
  */
-export const fetchInput = async (year, day, cache = true, check = true, example = false) => {
+export const getInput = async (year, day, cache = true, check = true, example = false) => {
   if (check) {
     const date = new Date(year, 11, day, 5, 0, 0, 0);
     if (date > new Date()) {
@@ -65,12 +65,13 @@ export const fetchInput = async (year, day, cache = true, check = true, example 
     return await fs.promises.readFile(filePath, 'utf-8');
   }
 
-  const input = await getInput(year, day);
+  const input = await fetchInput(year, day);
 
   console.log(
     `\n${chalk.green('✔')} Downloaded input file for year ${year}/${day}.`
   );
 
+  const p = path.dirname(filePath);
   if (!fs.existsSync(p)) {
     await fs.promises.mkdir(p, { recursive: true });
   }
