@@ -1,18 +1,23 @@
 #!/usr/bin/env node
 
+import { config } from 'dotenv';
+config();
+
 import fs from 'fs';
 import path from 'path';
 import chalk from 'chalk';
+import fetch from 'node-fetch';
 import { program } from 'commander';
 import { performance } from 'perf_hooks';
 import { spawn } from 'child_process';
 import { fileURLToPath } from 'url';
-import { fillString, round, textToArray } from './util/util.js';
-import { getAocPuzzleName, getInput, getInputFilePath } from './util/aoc_util.js';
-import { oraPromise } from "./util/ora.js";
+import { fillString, round, textToArray } from './util/utils.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+const baseUrl = 'https://adventofcode.com';
+const sessionCookie = process.env.SESSIONCOOKIE;
 
 const generateCMD = (lang, file, inputPath) => {
   if (lang === "py") {
@@ -20,7 +25,7 @@ const generateCMD = (lang, file, inputPath) => {
       cmd: "python3",
       args: [file, inputPath],
       env: {
-        PYTHONPATH: path.resolve(__dirname, "util", "py"),
+        PYTHONPATH: path.resolve(__dirname, "util"),
       }
     }
   }
@@ -46,7 +51,7 @@ program
   )
   .option('-d --day <day>', 'day of challenge to run', new Date().getDate())
   .option('-p --part <part>', `part of challenge to run`)
-  .option('-c --create [name]', `create file from template`)
+  .option('-c --create [name]', `create file from template, if name not specified, the name will be fetched from the aoc site`)
   .option('-a --all', `run all puzzles from one year`)
   .option('-f --flags <flags...>', 'parse flags to the challenge')
   .option('-i --input <path>', `specify path to a custom input`)
@@ -63,142 +68,227 @@ function throwError(message) {
   process.exit(1);
 }
 
+const fetchInput = async (year, day) => {
+  const url = `${baseUrl}/${year}/day/${day}/input`;
+
+  return await (
+    await fetch(url, {
+      headers: {
+        Cookie: `session=${sessionCookie}`,
+      },
+    })
+  ).text();
+};
+
+function getInputFilePath(year, day, example) {
+  const p = path.resolve('.input', `${year}`);
+  const filePath = path.resolve(
+    p,
+    `${example ? `${day}_example` : day}` + '.txt'
+  );
+  return filePath;
+}
+
+const getInput = async (year, day, cache = true, check = true, example = false) => {
+  if (check) {
+    const date = new Date(year, 11, day, 5, 0, 0, 0);
+    if (date > new Date()) {
+      const diff = date - new Date();
+      throw new Error(
+        `this challenge is not yet available! Starts in ${getTimeString(diff)}h`
+      );
+    }
+  }
+
+  const filePath = getInputFilePath(year, day, example);
+
+  if (cache && fs.existsSync(filePath)) {
+    return await fs.promises.readFile(filePath, 'utf-8');
+  }
+
+  const input = await fetchInput(year, day);
+
+  console.log(
+    `\n${chalk.green('✔')} Downloaded input file for year ${year}/${day}.`
+  );
+
+  const p = path.dirname(filePath);
+  if (!fs.existsSync(p)) {
+    await fs.promises.mkdir(p, { recursive: true });
+  }
+
+  await fs.promises.writeFile(filePath, input);
+
+  return input;
+};
+
+const getTimeString = (timeInMs, delimiter = ':') => {
+  let hours = Math.ceil((timeInMs / (1000 * 60 * 60)) % 60);
+  let minutes = Math.floor((timeInMs / (1000 * 60)) % 60);
+  let seconds = Math.floor((timeInMs / 1000) % 60);
+
+  hours = hours < 10 ? '0' + hours : hours;
+  minutes = minutes < 10 ? '0' + minutes : minutes;
+  seconds = seconds < 10 ? '0' + seconds : seconds;
+  return [hours, minutes, seconds].join(delimiter);
+};
+
+const getAocPuzzleName = async (year, day) => {
+  const url = `${baseUrl}/${year}/day/${day}`;
+
+  const html = await fetch(url).then(res => res.text());
+
+  const nameMatch = html.match(/<h2>--- Day \d+: (.*) ---<\/h2>/);
+
+  return nameMatch?.[1] || null;
+}
+
 (async function run() {
-  const p = path.resolve(`${program.year}`);
+  const yearFolderPath = path.resolve(`${program.year}`);
 
-  if (fs.existsSync(p)) {
-    if (program.all) {
-      const dir = (
-        await fs.promises.readdir(p, {
-          withFileTypes: true,
-        })
-      )
-        .filter((dirent) => dirent.isFile())
-        .map((file) => file.name);
-      let startTime = performance.now();
-
-      for (const puzzle of dir) {
-        let s = `------ ${puzzle} `;
-        while (s.length < 41) s += '-';
-
-        let st = performance.now();
-
-        console.log(chalk.blue(fillString(`------ ${puzzle} `, '-', 40)));
-        await runPuzzle({
-          year: program.year,
-          day: +puzzle.split('_')[0],
-          filename: puzzle,
-          part: +program.part,
-          flags: program.flags || [],
-          forceDownload: program.forceDownload,
-          example: program.example,
-          language: puzzle.split(".").at(-1),
-          saveAnswer: program.saveAnswer,
-          check: program.check,
-        });
-
-        console.log(
-          `${chalk.blue(
-            fillString(`------ ${round(performance.now() - st, 3)}ms `, '-', 40)
-          )}\n`
-        );
-      }
-
-      console.log(
-        chalk.blue(`
-------------------------------------
-Total time: ${round((performance.now() - startTime) / 1000, 3)}s 
-------------------------------------`)
-      );
-
-      return;
+  if (program.create) {
+    if (!fs.existsSync(yearFolderPath)) {
+      await fs.promises.mkdir(yearFolderPath);
     }
 
-    const solutions = (await fs.promises.readdir(p)).filter((file) =>
-      file.startsWith(`${(program.day + '').padStart(2, 0)}_`)
-    );
-
-    let pu = null;
-    let language = program.language;
-    if (program.language) {
-      pu = solutions.find(file => file.endsWith(`.${program.language}`));
-      if (!pu) {
-        throwError(`There is no solution in ${program.language} for ${program.year}/${program.day}`);
-      }
-    } else if (solutions.length > 1) {
-      for (const lang of ["js", "py"]) {
-        pu = solutions.find(file => file.endsWith(`.${lang}`));
-
-        if (pu) {
-          console.log(chalk.yellow("Selected lang: " + lang));
-          language = lang;
-          break;
-        }
-      }
-    } else {
-      pu = solutions[0];
-      language = pu.split(".").at(-1);
+    if (!program.language) {
+      throwError("Language not specified, required for -c");
     }
 
-    if (
-      pu &&
-      parseInt(pu.slice(0, 2)) === parseInt(program.day) &&
-      !program.create
-    ) {
-      await runPuzzle({
-        year: program.year,
-        day: program.day,
-        filename: pu,
-        part: +program.part,
-        flags: program.flags || [],
-        inputPath: program.input,
-        forceDownload: program.forceDownload,
-        example: program.example,
-        language: language,
-        saveAnswer: program.saveAnswer,
-        check: program.check,
-      });
-    } else if (program.create && !pu) {
-      try {
-        const template = (
-          await fs.promises.readFile(
-            path.resolve('templates', `puzzle.${program.language}`),
-            'utf-8'
-          )
-        )
-          .replaceAll("'{{year}}'", program.year)
-          .replaceAll("'{{day}}'", program.day);
-
-        const challengeName = program.create === true ? await getAocPuzzleName(program.year, program.day).then(x => x.replaceAll(/\W/g, "")) : program.create;
-        await fs.promises.writeFile(
-          path.resolve(
-            `${program.year}`,
-            `${('0' + program.day).slice(-2)}_${challengeName}.${program.language}`
-          ),
-          template,
-          'utf-8'
-        );
-      } catch (err) {
-        throw err;
-      }
-    } else if (pu) {
-      throwError('Nothing to create, file exists.');
-
-    } else {
-      throwError(
-        'challenge not found, you can create it with the -c flag'
-      );
-    }
-  } else if (program.create) {
     try {
-      await fs.promises.mkdir(path.resolve(`${program.year}`));
-      run();
+      const templatePath = path.resolve('templates', `puzzle.${program.language}`);
+
+      if (!fs.existsSync(templatePath)) {
+        throwError(`No template for language ${program.language} found`);
+      }
+
+      const template = (await fs.promises.readFile(templatePath, 'utf-8'))
+        .replaceAll("'{{year}}'", program.year)
+        .replaceAll("'{{day}}'", program.day);
+
+      const challengeName = program.create === true ? await getAocPuzzleName(program.year, program.day).then(x => x.replaceAll(/\W/g, "")) : program.create;
+
+      const filename = path.resolve(
+        `${program.year}`,
+        `${('0' + program.day).slice(-2)}_${challengeName}.${program.language}`
+      );
+
+      if (fs.existsSync(filename)) {
+        throwError('Nothing to create, file exists.');
+      }
+
+      await fs.promises.writeFile(filename, template, 'utf-8');
     } catch (err) {
       throw err;
     }
-  } else {
-    throwError('Nothing for this year found.');
+
+    return;
   }
+
+  if (!fs.existsSync(yearFolderPath)) {
+    throwError("No solutions for this year found.");
+  }
+
+  if (program.all) {
+    const dir = (
+      await fs.promises.readdir(yearFolderPath, {
+        withFileTypes: true,
+      })
+    )
+      .filter((dirent) => dirent.isFile())
+      .map((file) => file.name);
+    let startTime = performance.now();
+
+    for (const puzzle of dir) {
+      let s = `------ ${puzzle} `;
+      while (s.length < 41) s += '-';
+
+      let st = performance.now();
+
+      console.log(chalk.blue(fillString(`------ ${puzzle} `, '-', 40)));
+      await runPuzzle({
+        year: program.year,
+        day: +puzzle.split('_')[0],
+        filename: puzzle,
+        part: +program.part,
+        flags: program.flags || [],
+        forceDownload: program.forceDownload,
+        example: program.example,
+        language: puzzle.split(".").at(-1),
+        saveAnswer: program.saveAnswer,
+        check: program.check,
+      });
+
+      console.log(
+        `${chalk.blue(
+          fillString(`------ ${round(performance.now() - st, 3)}ms `, '-', 40)
+        )}\n`
+      );
+    }
+
+    console.log(
+      chalk.blue(`
+------------------------------------
+Total time: ${round((performance.now() - startTime) / 1000, 3)}s 
+------------------------------------`)
+    );
+
+    return;
+  }
+
+  // get all solutions for the specified day
+  const solutions = (await fs.promises.readdir(yearFolderPath)).filter((file) =>
+    file.startsWith(`${(program.day + '').padStart(2, 0)}_`)
+  );
+
+  // resolve lang and puzzle path
+  let puzzlePath = null;
+  let language = program.language;
+  if (program.language) {
+    // if specified, try to use that language
+    puzzlePath = solutions.find(file => file.endsWith(`.${program.language}`));
+    if (!puzzlePath) {
+      throwError(`There is no solution in ${program.language} for ${program.year}/${program.day}`);
+    }
+  } else if (solutions.length > 1) {
+    // if there is more than one, try js than py
+    let has_found = false;
+    for (const lang of ["js", "py"]) {
+      puzzlePath = solutions.find(file => file.endsWith(`.${lang}`));
+
+      if (puzzlePath) {
+        console.log(chalk.yellow("Selected lang: " + lang));
+        language = lang;
+        has_found = true;
+        break;
+      }
+    }
+
+    if (!has_found) {
+      const solutionLangs = solutions.map(x => x.split(".").at(-1)).join(", ");
+      throwError(`There is more than one solution (${solutionLangs}), specify one with the -l flag`);
+    }
+  } else if (solutions.length === 1) {
+    // try the only existing solution
+    puzzlePath = solutions[0];
+    language = puzzlePath.split(".").at(-1);
+  } else {
+    throwError("No solution was found, create it with the -c flag");
+  }
+
+  await runPuzzle({
+    year: program.year,
+    day: program.day,
+    filename: puzzlePath,
+    part: +program.part,
+    flags: program.flags || [],
+    inputPath: program.input,
+    forceDownload: program.forceDownload,
+    example: program.example,
+    language: language,
+    saveAnswer: program.saveAnswer,
+    check: program.check,
+  });
 })();
 
 function getAnswerFilePath(year) {
@@ -226,7 +316,9 @@ function getSaveKey(args) {
 }
 
 async function runPuzzle(args) {
+  const startTime = performance.now();
   const res = await getPuzzleAnswer(args);
+  const t = round(performance.now() - startTime, 3);
 
   const { day, year } = args;
 
@@ -234,7 +326,8 @@ async function runPuzzle(args) {
     const answers = await getAnswers(year, getSaveKey(args));
 
     const checkPart = (answers, res, i) => {
-      if (!answers[i] || !res[i]) return null;
+      if (!answers[i]) return null;
+      if (!res[i]) return undefined;
 
       if (`${answers[i]}` !== `${res[i]}`) {
         console.log(chalk.red(`❌ Part ${i + 1}: ${res[i]} !== ${answers[i]} (expected)`))
@@ -250,6 +343,11 @@ async function runPuzzle(args) {
     if (p1 === null || p2 === null) {
       const partString = [p1 === null ? "part 1" : "", p2 === null ? "part 2" : ""].join(", ");
       console.log(chalk.yellow(`Warning: no saved answer found to check against for: ${chalk.bold.white(partString)}`));
+    }
+
+    if (p1 === undefined || p2 === undefined) {
+      const partString = [p1 === undefined ? "part 1" : "", p2 === undefined ? "part 2" : ""].join(", ");
+      console.log(chalk.yellow(`Warning: no answer in the solution output found to check against for: ${chalk.bold.white(partString)}`));
     }
   }
 
@@ -268,6 +366,9 @@ async function runPuzzle(args) {
 
     console.log(`${chalk.green("✔")} Answers saved for ${chalk.green(year)}/${chalk.green(day)}: ${JSON.stringify(currentAnswers[key])}`);
   }
+
+  process.stderr.write(chalk.green(`✔ Succeeded in ${t}ms\n`));
+
   return res;
 }
 

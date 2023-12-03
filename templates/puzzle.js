@@ -1,4 +1,4 @@
-import { readInput, textToArray } from '../util/util.js';
+import { readInput, textToArray } from '../util/utils.js';
 
 let list = textToArray(readInput());
 
