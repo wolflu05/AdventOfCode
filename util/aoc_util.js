@@ -101,11 +101,7 @@ export const getTimeString = (timeInMs, delimiter = ':') => {
 export const getAocPuzzleName = async (year, day) => {
     const url = `${baseUrl}/${year}/day/${day}`;
 
-    const html = await fetch(url, {
-        headers: {
-            Cookie: `session=${sessionCookie}`,
-        },
-    }).then(res => res.text());
+    const html = await fetch(url).then(res => res.text());
 
     const nameMatch = html.match(/<h2>--- Day \d+: (.*) ---<\/h2>/);
 
