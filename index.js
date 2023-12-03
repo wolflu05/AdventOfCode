@@ -6,14 +6,23 @@ import chalk from 'chalk';
 import { program } from 'commander';
 import { performance } from 'perf_hooks';
 import { spawn } from 'child_process';
+import { fileURLToPath } from 'url';
 import { fillString, round, textToArray } from './util/util.js';
 import { getAocPuzzleName, getInput, getInputFilePath } from './util/aoc_util.js';
 import { oraPromise } from "./util/ora.js";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const generateCMD = (lang, file, inputPath) => {
   if (lang === "py") {
-    return ["python3", [file, inputPath]];
+    return {
+      cmd: "python3",
+      args: [file, inputPath],
+      env: {
+        PYTHONPATH: path.resolve(__dirname, "util", "py")
+      }
+    }
   }
 }
 
@@ -266,8 +275,14 @@ async function getPuzzleAnswer({
       }
     }
 
-    const cmd = generateCMD(language, programFilePath, fullInputPath);
-    const cProcess = spawn(...cmd, {});
+    const { cmd, args, env } = generateCMD(language, programFilePath, fullInputPath);
+    const cProcess = spawn(cmd, args, {
+      cwd: __dirname,
+      env: {
+        ...process.env,
+        ...env
+      }
+    });
 
     let output = "";
 
@@ -286,7 +301,7 @@ async function getPuzzleAnswer({
         if (lines.length === 2) {
           res(lines);
         } else {
-          res();
+          res([null, null]);
         }
       });
 
