@@ -20,10 +20,19 @@ const generateCMD = (lang, file, inputPath) => {
       cmd: "python3",
       args: [file, inputPath],
       env: {
-        PYTHONPATH: path.resolve(__dirname, "util", "py")
+        PYTHONPATH: path.resolve(__dirname, "util", "py"),
       }
     }
   }
+
+  if (lang === "js") {
+    return {
+      cmd: "node",
+      args: [file, inputPath],
+    }
+  }
+
+  throwError(`Language ${lang} has no defined cmd generator.`)
 }
 
 
@@ -41,14 +50,18 @@ program
   .option('-a --all', `run all puzzles from one year`)
   .option('-f --flags <flags...>', 'parse flags to the challenge')
   .option('-i --input <path>', `specify path to a custom input`)
-  .option('-s --short', `only print result without the answer sentence`, false)
   .option('-fd --force-download', `force the download of the input file`)
   .option('-e --example', `use _example suffixed input`, false)
-  .option('-l --language <language>', 'specify another language', 'js')
+  .option('-l --language <language>', 'specify another language')
   .option('--no-check', 'ignore check answer with saved answer if existing')
   .option('-sa --save-answer', 'save the answer of this run for later validation');
 
 program.parse(process.argv);
+
+function throwError(message) {
+  console.error("Error:", message);
+  process.exit(1);
+}
 
 (async function run() {
   const p = path.resolve(`${program.year}`);
@@ -60,7 +73,7 @@ program.parse(process.argv);
           withFileTypes: true,
         })
       )
-        .filter((dirent) => dirent.isFile() && dirent.name.endsWith('.js'))
+        .filter((dirent) => dirent.isFile())
         .map((file) => file.name);
       let startTime = performance.now();
 
@@ -77,10 +90,9 @@ program.parse(process.argv);
           filename: puzzle,
           part: +program.part,
           flags: program.flags || [],
-          short: program.short,
           forceDownload: program.forceDownload,
           example: program.example,
-          language: program.language,
+          language: puzzle.split(".").at(-1),
           saveAnswer: program.saveAnswer,
           check: program.check,
         });
@@ -102,9 +114,31 @@ Total time: ${round((performance.now() - startTime) / 1000, 3)}s
       return;
     }
 
-    const pu = (await fs.promises.readdir(p)).find((file) =>
-      file.startsWith(`${(program.day + '').padStart(2, 0)}_`) && file.endsWith(`.${program.language}`)
+    const solutions = (await fs.promises.readdir(p)).filter((file) =>
+      file.startsWith(`${(program.day + '').padStart(2, 0)}_`)
     );
+
+    let pu = null;
+    let language = program.language;
+    if (program.language) {
+      pu = solutions.find(file => file.endsWith(`.${program.language}`));
+      if (!pu) {
+        throwError(`There is no solution in ${program.language} for ${program.year}/${program.day}`);
+      }
+    } else if (solutions.length > 1) {
+      for (const lang of ["js", "py"]) {
+        pu = solutions.find(file => file.endsWith(`.${lang}`));
+
+        if (pu) {
+          console.log(chalk.yellow("Selected lang: " + lang));
+          language = lang;
+          break;
+        }
+      }
+    } else {
+      pu = solutions[0];
+      language = pu.split(".").at(-1);
+    }
 
     if (
       pu &&
@@ -118,10 +152,9 @@ Total time: ${round((performance.now() - startTime) / 1000, 3)}s
         part: +program.part,
         flags: program.flags || [],
         inputPath: program.input,
-        short: program.short,
         forceDownload: program.forceDownload,
         example: program.example,
-        language: program.language,
+        language: language,
         saveAnswer: program.saveAnswer,
         check: program.check,
       });
@@ -149,9 +182,10 @@ Total time: ${round((performance.now() - startTime) / 1000, 3)}s
         throw err;
       }
     } else if (pu) {
-      throw new Error('Nothing to create, file exists.');
+      throwError('Nothing to create, file exists.');
+
     } else {
-      throw new Error(
+      throwError(
         'challenge not found, you can create it with the -c flag'
       );
     }
@@ -163,7 +197,7 @@ Total time: ${round((performance.now() - startTime) / 1000, 3)}s
       throw err;
     }
   } else {
-    throw new Error('Nothing for this year found.');
+    throwError('Nothing for this year found.');
   }
 })();
 
@@ -232,161 +266,64 @@ async function runPuzzle(args) {
 async function getPuzzleAnswer({
   year,
   filename,
-  part,
   flags,
   inputPath,
   day: d,
-  short,
   forceDownload,
   example,
   language,
 }) {
-  const getInputAsText = async () => {
-    let inputText;
+  const programFilePath = path.resolve(".", `${year}`, filename);
 
-    if (inputPath) {
-      const filePath = path.resolve(process.cwd(), inputPath);
+  if (!fs.existsSync(programFilePath)) {
+    throwError(`This puzzle file was not found at ${programFilePath}.`);
+  }
 
-      if (fs.existsSync(filePath)) {
-        inputText = await fs.promises.readFile(filePath, 'utf-8');
+  let fullInputPath = getInputFilePath(year, d, example);
+  if (inputPath) {
+    fullInputPath = path.resolve(process.cwd(), inputPath);
+
+    if (!fs.existsSync(fullInputPath)) {
+      throwError(`File "${fullInputPath}" not found.`);
+    }
+  } else if (!fs.existsSync(fullInputPath)) {
+    await getInput(year, d, !forceDownload, true, example);
+  }
+
+  const { cmd, args, env } = generateCMD(language, programFilePath, fullInputPath, flags);
+  const cProcess = spawn(cmd, args, {
+    cwd: __dirname,
+    env: {
+      ...process.env,
+      ...env,
+      AOC_FLAGS: flags.join(",")
+    }
+  });
+
+  let output = "";
+
+  return new Promise((res) => {
+    cProcess.stdout.on("data", (data) => {
+      const line = data.toString("utf-8");
+      output += line;
+      process.stdout.write(data);
+    });
+    cProcess.stderr.pipe(process.stderr);
+
+    cProcess.on("close", (code) => {
+      if (code > 0) return res([null, null]);
+
+      const lines = textToArray(output);
+      if (lines.length === 2) {
+        res(lines);
       } else {
-        throw new Error(`File "${filePath}" not found.`);
-      }
-    } else {
-      inputText = await getInput(year, d, !forceDownload, true, example);
-    }
-
-    return inputText;
-  }
-
-  if (language !== "js") {
-    const programFilePath = path.resolve(".", `${year}`, filename);
-
-    if (!fs.existsSync(programFilePath)) {
-      throw new Error(`This puzzle file was not found at ${programFilePath}.`);
-    }
-
-    let fullInputPath = getInputFilePath(year, d, example);
-    if (inputPath) {
-      fullInputPath = path.resolve(process.cwd(), inputPath);
-
-      if (!fs.existsSync(fullInputPath)) {
-        throw new Error(`File "${fullInputPath}" not found.`);
-      }
-    }
-
-    const { cmd, args, env } = generateCMD(language, programFilePath, fullInputPath);
-    const cProcess = spawn(cmd, args, {
-      cwd: __dirname,
-      env: {
-        ...process.env,
-        ...env
+        res([null, null]);
       }
     });
 
-    let output = "";
-
-    return new Promise((res) => {
-      cProcess.stdout.on("data", (data) => {
-        const line = data.toString("utf-8");
-        output += line;
-        process.stdout.write(data);
-      });
-      cProcess.stderr.pipe(process.stderr);
-
-      cProcess.on("close", (code) => {
-        if (code > 0) return res();
-
-        const lines = textToArray(output);
-        if (lines.length === 2) {
-          res(lines);
-        } else {
-          res([null, null]);
-        }
-      });
-
-      cProcess.on("error", (err) => {
-        console.error(err);
-        process.exit(1);
-      });
+    cProcess.on("error", (err) => {
+      console.error(err);
+      process.exit(1);
     });
-  }
-
-  let day = null;
-  try {
-    day = (await import(`./${year}/${filename}`)).default;
-  } catch (err) {
-    console.error(err);
-    throw new Error('This puzzle was not found or a error occurred.');
-  }
-  if (day === null) throw new Error('This puzzle was not found.');
-
-  const parseInput = async () => {
-    const inputText = await getInputAsText();
-
-    return day({ input: inputText, flags });
-  };
-
-  const { part1, part2 } = await oraPromise(
-    'parse input',
-    parseInput,
-    () => 'input parsed successfully.',
-    undefined,
-    short
-  );
-
-  const args = { flags };
-  const resolveFunction = (res) => {
-    if (['string', 'number'].includes(typeof res)) {
-      res = { text: res };
-    }
-
-    return res.text || res.result;
-  };
-
-  const result = [null, null];
-
-  if (isNaN(part) || part === 0 || part === 1) {
-    if (!short) {
-      console.log(chalk.bold('Part 1:'));
-    }
-
-    const res = await oraPromise(
-      'puzzle 1',
-      part1,
-      resolveFunction,
-      args,
-      short
-    );
-
-    // TODO: replace with res
-    result[0] = res.result || res;
-
-    if (short) {
-      console.log(res.result);
-    }
-  }
-
-  if (isNaN(part) || part === 0 || part === 2) {
-    if (!short) {
-      console.log(chalk.bold('Part 2:'));
-    }
-
-    const res = await oraPromise(
-      'puzzle 2',
-      part2,
-      resolveFunction,
-      args,
-      short
-    );
-
-    // TODO: replace with res
-    result[1] = res.result || res;
-
-    if (short) {
-      console.log(res.result);
-    }
-  }
-
-  return result;
+  });
 }

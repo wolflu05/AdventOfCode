@@ -1,5 +1,10 @@
 import chalk from 'chalk';
+import fs from 'fs';
 import _ from 'lodash';
+
+// ---- Interfacing with cli
+export const readInput = () => fs.readFileSync(process.argv[2], { encoding: "utf-8" });
+export const getFlags = () => process.env.AOC_FLAGS?.split(",") || [];
 
 // ---- Parsing
 
@@ -153,6 +158,9 @@ export const isLower = (string) => string === string.toLowerCase();
  * @param {Array<[INP, OUT]>} cases Array of test cases to run
  */
 export const testCases = (name, solve, cases) => {
+  // only run test cases if test flag is set
+  if (!getFlags().includes("test")) return;
+
   if (typeof name === 'function') {
     [name, solve, cases] = ['---', name, solve];
   }
