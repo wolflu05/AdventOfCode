@@ -234,15 +234,23 @@ async function runPuzzle(args) {
     const answers = await getAnswers(year, getSaveKey(args));
 
     const checkPart = (answers, res, i) => {
-      if (!answers[i] || !res[i]) return;
+      if (!answers[i] || !res[i]) return null;
 
       if (`${answers[i]}` !== `${res[i]}`) {
         console.log(chalk.red(`❌ Part ${i + 1}: ${res[i]} !== ${answers[i]} (expected)`))
+        return false
       }
+
+      return true;
     }
 
-    checkPart(answers, res, 0);
-    checkPart(answers, res, 1);
+    const p1 = checkPart(answers, res, 0);
+    const p2 = checkPart(answers, res, 1);
+
+    if (p1 === null || p2 === null) {
+      const partString = [p1 === null ? "part 1" : "", p2 === null ? "part 2" : ""].join(", ");
+      console.log(chalk.yellow(`Warning: no saved answer found to check against for: ${chalk.bold.white(partString)}`));
+    }
   }
 
   if (args.saveAnswer && res) {
