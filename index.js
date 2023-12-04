@@ -11,6 +11,7 @@ import { program } from 'commander';
 import { performance } from 'perf_hooks';
 import { spawn } from 'child_process';
 import { fileURLToPath } from 'url';
+import { AsciiTable3 } from 'ascii-table3';
 import { fillString, round, textToArray } from './util/utils.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -190,48 +191,100 @@ const getAocPuzzleName = async (year, day) => {
   }
 
   if (program.all) {
-    const dir = (
+    const [solutions, langs] = (
       await fs.promises.readdir(yearFolderPath, {
         withFileTypes: true,
       })
     )
       .filter((dirent) => dirent.isFile())
-      .map((file) => file.name);
-    let startTime = performance.now();
+      .map((file) => file.name)
+      .reduce(([acc, langs], s) => {
+        const day = parseInt(s.split("_")[0]);
+        if (!(day in acc)) acc[day] = [];
+        acc[day].push(s);
+        langs.add(s.split(".").at(-1));
+        return [acc, langs];
+      }, [{}, new Set()]);
 
-    for (const puzzle of dir) {
-      let s = `------ ${puzzle} `;
-      while (s.length < 41) s += '-';
+    const langsArr = [...langs];
 
-      let st = performance.now();
+    const generateTable = (top = true) => {
+      const table = new AsciiTable3()
+        .setWidths([10, 25, 15, 15, ...langsArr.map(_ => 15)])
+        .setWrappings([false, false, true, true, ...langsArr.map(_ => false)])
 
-      console.log(chalk.blue(fillString(`------ ${puzzle} `, '-', 40)));
-      await runPuzzle({
-        year: program.year,
-        day: +puzzle.split('_')[0],
-        filename: puzzle,
-        part: +program.part,
-        flags: program.flags || [],
-        forceDownload: program.forceDownload,
-        example: program.example,
-        language: puzzle.split(".").at(-1),
-        saveAnswer: program.saveAnswer,
-        check: program.check,
-      });
+      const style = table.getStyle();
+      if (!top) {
+        style.borders.top = { left: "", center: "", right: "", colSeparator: "" }
+      }
 
-      console.log(
-        `${chalk.blue(
-          fillString(`------ ${round(performance.now() - st, 3)}ms `, '-', 40)
-        )}\n`
-      );
+      return table;
     }
 
-    console.log(
-      chalk.blue(`
-------------------------------------
-Total time: ${round((performance.now() - startTime) / 1000, 3)}s 
-------------------------------------`)
-    );
+    const headingTable = generateTable().addRow("Day", "Name", "Part 1", "Part 2", ...langsArr);
+    console.log(headingTable.toString().trim());
+
+    let time = 0;
+    const answers = await getAnswers(program.year);
+
+    for (const [day, files] of Object.entries(solutions)) {
+      const promises = files.map(async (f) => {
+        const startTime = performance.now();
+        const res = await getPuzzleAnswer({
+          year: program.year,
+          day: day,
+          filename: f,
+          flags: program.flags || [],
+          forceDownload: program.forceDownload,
+          example: program.example,
+          language: f.split(".").at(-1),
+          saveAnswer: program.saveAnswer,
+          check: program.check,
+          stdout: null,
+          stderr: null,
+        });
+        const t = round(performance.now() - startTime, 3);
+        time += t;
+        return { res, t };
+      });
+
+      const k = getSaveKey({ day: day, example: program.example });
+      const solution = answers[k] || [null, null];
+      const solutionStrArr = solution.map(x => chalk.blue(x) || chalk.grey("N/A"));
+
+      const langRes = (await Promise.allSettled(promises)).reduce((acc, { status, value }, i) => {
+        const lang = files[i].split(".").at(-1);
+
+        let st = status === "fulfilled" ? ["green", "✔"] : ["red", "✖"];
+        if (status === "fulfilled") {
+          const p1 = checkPart(solution, value.res, 0);
+          const p2 = checkPart(solution, value.res, 1);
+
+          if ((!p1 || !p2)) {
+            if ((p1 === false || p2 === false)) st = ["yellow", "!"];
+            else st = ["grey", "?"];
+          }
+        }
+
+        acc[lang] = (chalk[st[0]])(`${st[1]} ${value?.t ? `(${value.t}ms)` : "Error"}`);
+
+        return acc;
+      }, {});
+      const langResArr = langsArr.map(l => langRes[l] || chalk.gray("N/A"));
+
+      const name = files.length > 0 ? files[0].replace(/^\d+_(.*)\.\w+$/, "$1") : chalk.gray("N/A");
+
+      const row = generateTable(false).addRow(chalk.green(`${program.year}/${day.padStart(2, 0)}`), name, ...solutionStrArr, ...langResArr);
+
+      console.log(row.toString().trim());
+    }
+
+    const legendStr = `Legend: ${chalk.green("✔ - Success")}, ${chalk.red("✖ - error")}, ${chalk.yellow("! - invalid solution")}, ${chalk.grey("? - no saved answer/output solution found")}`;
+    const legend = generateTable(false)
+      .addRow(legendStr)
+      .addRow(`Total time: ${chalk.green(`${round((time) / 1000, 3)}s`)}`)
+      .setWidth(1, headingTable.getWidths().reduce((a, b) => a + b + 1));
+    console.log(legend.toString().trim())
 
     return;
   }
@@ -276,19 +329,24 @@ Total time: ${round((performance.now() - startTime) / 1000, 3)}s
     throwError("No solution was found, create it with the -c flag");
   }
 
-  await runPuzzle({
-    year: program.year,
-    day: program.day,
-    filename: puzzlePath,
-    part: +program.part,
-    flags: program.flags || [],
-    inputPath: program.input,
-    forceDownload: program.forceDownload,
-    example: program.example,
-    language: language,
-    saveAnswer: program.saveAnswer,
-    check: program.check,
-  });
+  try {
+    await runPuzzle({
+      year: program.year,
+      day: program.day,
+      filename: puzzlePath,
+      part: +program.part,
+      flags: program.flags || [],
+      inputPath: program.input,
+      forceDownload: program.forceDownload,
+      example: program.example,
+      language: language,
+      saveAnswer: program.saveAnswer,
+      check: program.check,
+    });
+  } catch (err) {
+    console.error(chalk.red("Error:"), err);
+    process.exit(1);
+  }
 })();
 
 function getAnswerFilePath(year) {
@@ -315,6 +373,17 @@ function getSaveKey(args) {
   return key;
 }
 
+function checkPart(answers, res, i) {
+  if (!answers[i]) return null;
+  if (!res[i]) return undefined;
+
+  if (`${answers[i]}` !== `${res[i]}`) {
+    return false;
+  }
+
+  return true;
+}
+
 async function runPuzzle(args) {
   const startTime = performance.now();
   const res = await getPuzzleAnswer(args);
@@ -325,20 +394,17 @@ async function runPuzzle(args) {
   if (args.check) {
     const answers = await getAnswers(year, getSaveKey(args));
 
-    const checkPart = (answers, res, i) => {
-      if (!answers[i]) return null;
-      if (!res[i]) return undefined;
-
-      if (`${answers[i]}` !== `${res[i]}`) {
-        console.log(chalk.red(`❌ Part ${i + 1}: ${res[i]} !== ${answers[i]} (expected)`))
-        return false
+    const checkP = (answers, res, i) => {
+      const result = checkPart(answers, res, i);
+      if (result === false) {
+        console.log(chalk.red(`❌ Part ${i + 1}: ${res[i]} !== ${answers[i]} (expected)`));
       }
 
-      return true;
+      return result;
     }
 
-    const p1 = checkPart(answers, res, 0);
-    const p2 = checkPart(answers, res, 1);
+    const p1 = checkP(answers, res, 0);
+    const p2 = checkP(answers, res, 1);
 
     if (p1 === null || p2 === null) {
       const partString = [p1 === null ? "part 1" : "", p2 === null ? "part 2" : ""].join(", ");
@@ -381,6 +447,8 @@ async function getPuzzleAnswer({
   forceDownload,
   example,
   language,
+  stdout = process.stdout,
+  stderr = process.stderr,
 }) {
   const programFilePath = path.resolve(".", `${year}`, filename);
 
@@ -411,16 +479,16 @@ async function getPuzzleAnswer({
 
   let output = "";
 
-  return new Promise((res) => {
+  return new Promise((res, rej) => {
     cProcess.stdout.on("data", (data) => {
       const line = data.toString("utf-8");
       output += line;
-      process.stdout.write(data);
+      if (stdout) stdout.write(data);
     });
-    cProcess.stderr.pipe(process.stderr);
+    if (stderr) cProcess.stderr.pipe(stderr);
 
     cProcess.on("close", (code) => {
-      if (code > 0) return res([null, null]);
+      if (code > 0) return rej(`Returned non-zero exit code (${code})`);
 
       const lines = textToArray(output);
       if (lines.length === 2) {
@@ -431,8 +499,7 @@ async function getPuzzleAnswer({
     });
 
     cProcess.on("error", (err) => {
-      console.error(err);
-      process.exit(1);
+      rej(err)
     });
   });
 }
