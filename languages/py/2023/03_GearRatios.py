@@ -1,9 +1,6 @@
-import sys
-from utils import get_positions, iterate_positions
+from lib import *
 
-inp = []
-with open(sys.argv[1]) as f:
-    inp = [l.strip() for l in f.readlines()]
+inp = get_input()
 
 p1 = 0
 gears = {}

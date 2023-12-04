@@ -1,8 +1,6 @@
-import sys
+from lib import *
 
-inp = []
-with open(sys.argv[1]) as f:
-    inp = [l.strip() for l in f.readlines()]
+inp = get_input()
 
 WORD_NUMS = "one_two_three_four_five_six_seven_eight_nine".split("_")
 

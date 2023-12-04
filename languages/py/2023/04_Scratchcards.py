@@ -1,8 +1,7 @@
-import sys, re, functools
+import re, functools
+from lib import *
 
-inp = []
-with open(sys.argv[1]) as f:
-    inp = [l.strip() for l in f.readlines()]
+inp = get_input()
 
 p1 = 0
 cards = {}

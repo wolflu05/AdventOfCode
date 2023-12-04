@@ -5,7 +5,7 @@
   "main": "index.js",
   "type": "module",
   "bin": {
-    "aoc": "./index.js"
+    "aoc": "./cli/index.js"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
