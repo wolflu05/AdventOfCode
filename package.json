@@ -8,7 +8,7 @@
     "aoc": "./cli/index.js"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "watch": "npx nodemon --ext \"py,txt\" --quiet aoc --"
   },
   "repository": {
     "type": "git",

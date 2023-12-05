@@ -85,7 +85,7 @@ export async function getAnswers(year, key) {
 export function getSaveKey(args) {
   let key = `${args.day}`;
   if (args.example) key += "_example";
-  if (args.inputPath) key += path.resolve(process.cwd(), args.inputPath);
+  if (args.inputPath) key += "_" + path.resolve(process.cwd(), args.inputPath);
 
   return key;
 }
