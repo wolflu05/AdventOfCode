@@ -65,7 +65,7 @@ def map_category(src, nums):
         ranges.extend(split_ranges(_map, num, _len))
 
     res = []
-    for n, _len, m in ranges: # TODO: integrate in loop above
+    for n, _len, m in ranges:
         if m is None:
             res.append((n, _len))
             continue
