@@ -1,6 +1,8 @@
 import fetch from 'node-fetch';
+import chalk from "chalk";
+import { parse, HTMLElement } from 'node-html-parser'
 import { baseUrl, sessionCookie } from './constants';
-import { getTimeString, throwError } from './utils'
+import { getTimeString, throwError } from './utils';
 
 export const getHeaders = () => {
   return {
@@ -30,7 +32,7 @@ export const checkPuzzleAvailable = (year: number, day: number): never | void =>
   return;
 }
 
-export const fetchInput = async (year: number, day: number) => {
+export const getAocPuzzleInput = async (year: number, day: number) => {
   checkPuzzleAvailable(year, day);
 
   const url = `${baseUrl}/${year}/day/${day}/input`;
@@ -41,14 +43,43 @@ export const fetchInput = async (year: number, day: number) => {
   });
 };
 
-export const getAocPuzzleName = async (year: number, day: number) => {
+export const getAocPuzzlePage = async (year: number, day: number) => {
   checkPuzzleAvailable(year, day);
 
   const url = `${baseUrl}/${year}/day/${day}`;
+  const html = await fetch(url, { headers: getHeaders() }).then(res => res.text());
 
-  const html = await fetch(url).then(res => res.text());
-
-  const nameMatch = html.match(/<h2>--- Day \d+: (.*) ---<\/h2>/);
-
-  return nameMatch?.[1] || null;
+  return parse(html, { blockTextElements: { code: true } });
 };
+
+export const getAocPuzzleName = (root: HTMLElement): null | string => {
+  try {
+    const name = root.querySelector("h2");
+    const nameMatch = name?.innerText.match(/--- Day \d+: (.*) ---/);
+
+    return nameMatch?.[1] || null;
+  } catch (err) {
+    console.log(chalk.red("Error:"), err)
+    return null
+  }
+}
+
+export const getAocExample = (root: HTMLElement): null | string => {
+  try {
+    const pres = root.querySelectorAll("pre");
+
+    for (const pre of pres) {
+      if (pre.previousElementSibling.innerText.trim() === "For example") {
+        return pre.firstChild.innerText;
+      }
+    }
+
+    if (pres.length > 0) {
+      return pres[0].firstChild.innerText;
+    }
+  } catch (err) {
+    console.log(chalk.red("Error:"), err)
+  }
+
+  return null;
+}

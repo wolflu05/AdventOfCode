@@ -119,7 +119,7 @@ const runCommand = new Command()
       watcher.on("change", async (p) => {
         ref.i++;
         let header = `${"-".repeat(10)} Detected change: ` + path.relative(baseFolder, p) + " ";
-        header += ` [${ref.i}]`.padStart(80 - header.length, "-");
+        header += ` [${ref.i}]`.padStart(95 - header.length, "-");
         console.log(chalk.blue(header));
         await Promise.resolve(runner.kill());
         await run(ref.i);

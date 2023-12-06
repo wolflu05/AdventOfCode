@@ -2,8 +2,9 @@ import fs from 'fs';
 import path from 'path';
 import chalk from 'chalk';
 import { Command, Option } from 'commander';
+import { spawnSync } from "child_process";
 import { getAvailableLangs, getInputFilePath, getTimeString, minMaxValueParser, throwError } from '../utils';
-import { getAocPuzzleName, hasPuzzleStarted } from '../aoc';
+import { getAocExample, getAocPuzzleName, getAocPuzzlePage, hasPuzzleStarted } from '../aoc';
 import { baseFolder } from '../constants';
 
 
@@ -58,21 +59,22 @@ async function create(name: string | undefined, { year, day, language }: { year:
       throwError(`No template for language ${language} found, create it at '${path.relative(baseFolder, templatePath)}'`);
     }
 
-    // if no name is specified => fetch it from the aoc site
-    if (name === undefined) {
-      name = await getAocPuzzleName(year, day).then((x) => x?.replaceAll(/\W/g, ""));
-    }
-
     const dayStr = day.toString().padStart(2, "0");
-    const filename = path.join(
-      yearFolderPath,
-      `${dayStr}_${name}.${language}`
-    );
-
     const existing = fs.readdirSync(yearFolderPath).find(f => f.startsWith(dayStr + "_"));
     if (existing) {
       throwError(`Nothing to create, file ${path.relative(baseFolder, path.join(yearFolderPath, existing))} already exists.`);
     }
+
+    // if no name is specified => fetch it from the aoc site
+    const puzzlePage = await getAocPuzzlePage(year, day);
+    if (name === undefined) {
+      name = getAocPuzzleName(puzzlePage)?.replaceAll(/\W/g, "");
+    }
+
+    const filename = path.join(
+      yearFolderPath,
+      `${dayStr}_${name}.${language}`
+    );
 
     const template = (await fs.promises.readFile(templatePath, 'utf-8'))
       .replaceAll("{{year}}", `${year}`)
@@ -89,11 +91,15 @@ async function create(name: string | undefined, { year, day, language }: { year:
       await fs.promises.mkdir(exampleDirPath, { recursive: true });
     }
     if (!fs.existsSync(exampleFilePath)) {
-      await fs.promises.writeFile(exampleFilePath, "", "utf-8");
+      await fs.promises.writeFile(exampleFilePath, getAocExample(puzzlePage) || "", "utf-8");
       console.log(`${chalk.green("✔ Successfully created example:")} ${path.relative(baseFolder, exampleFilePath)}`);
     } else {
       console.log(`${chalk.green("✔ Found existing example:")} ${path.relative(baseFolder, exampleFilePath)}`);
     }
+
+    try {
+      spawnSync("code", ["-r", filename, exampleFilePath]);
+    } catch { }
   } catch (err) {
     throwError(err);
   }

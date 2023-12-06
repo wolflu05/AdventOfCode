@@ -2,7 +2,7 @@ import chalk from "chalk";
 import fs from "fs";
 import path from "path";
 import { InvalidArgumentError } from "commander";
-import { fetchInput } from "./aoc";
+import { getAocPuzzleInput } from "./aoc";
 import { baseFolder } from "./constants";
 import { Runner } from './runner';
 
@@ -75,7 +75,7 @@ export const getOrCreateInput = async ({
     return filePath;
   }
 
-  const input = await fetchInput(year, day);
+  const input = await getAocPuzzleInput(year, day);
 
   const p = path.dirname(filePath);
   if (!fs.existsSync(p)) {
