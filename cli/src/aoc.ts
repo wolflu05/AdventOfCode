@@ -8,12 +8,22 @@ export const getHeaders = () => {
   };
 }
 
+export const hasPuzzleStarted = (year: number, day: number) => {
+  const startDate = new Date(year, 11, day, 6, 0, 0, 0);
+  const currentDate = new Date();
+  const diff = startDate.getTime() - currentDate.getTime() + 1000;
+  if (diff > 0) {
+    return diff;
+  }
+
+  return true;
+}
+
 export const checkPuzzleAvailable = (year: number, day: number): never | void => {
-  const date = new Date(year, 11, day, 5, 0, 0, 0);
-  if (date > new Date()) {
-    const diff = date.getTime() - new Date().getTime();
+  const hasStarted = hasPuzzleStarted(year, day);
+  if (hasStarted !== true) {
     return throwError(
-      `This puzzle is not yet available! Starts in ${getTimeString(diff)}.`
+      `This puzzle is not yet available! Starts in ${getTimeString(hasStarted)}.`
     );
   }
 
