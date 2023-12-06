@@ -1,0 +1,34 @@
+{
+  "name": "adventofcode",
+  "version": "1.0.0",
+  "description": "",
+  "private": true,
+  "bin": {
+    "aoc": "./dist/index.js"
+  },
+  "scripts": {
+    "watch": "npx nodemon --ext \"py,txt\" --quiet aoc --",
+    "dev": "tsc --watch",
+    "build": "tsc",
+    "postinstall": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wolflu05/AdventOfCode.git"
+  },
+  "author": "wolflu05",
+  "dependencies": {
+    "ascii-table3": "^0.9.0",
+    "chalk": "^4.1.2",
+    "chokidar": "^3.5.3",
+    "commander": "^11.1.0",
+    "dotenv": "^16.3.1",
+    "node-fetch": "^2.7.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.3",
+    "@types/node-fetch": "^2.6.9",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.3.2"
+  }
+}
