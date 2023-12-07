@@ -231,7 +231,8 @@ export const getAllSolutionsForYear = async (year: number) => {
           day: parseInt(file.name.split("_")[0], 10),
           name: file.name.replace(/^\d+_(.*)\.\w+$/, "$1"),
           lang: lang,
-        }));
+        }))
+        .filter((s) => s.path.endsWith(`.${s.lang}`));
     });
   }))).flat();
 }
