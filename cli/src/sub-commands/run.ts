@@ -4,7 +4,7 @@ import chalk from 'chalk';
 import chokidar from 'chokidar';
 import { Command, Option } from 'commander';
 import { performance } from 'perf_hooks';
-import { AnswerT, SolutionT, checkPart, getAllSolutionsForYear, getAnswerFilePath, getAnswers, getAvailableLangs, getOrCreateInput, getRunner, getSaveKey, minMaxValueParser, round, throwError } from '../utils';
+import { AnswerT, SolutionT, checkPart, getAllSolutionsForYear, getAnswers, getAvailableLangs, getOrCreateInput, getRunner, getSaveKey, minMaxValueParser, round, setAnswer, throwError } from '../utils';
 import { Runner } from "../runner";
 import { baseFolder } from "../constants";
 
@@ -13,7 +13,7 @@ interface OptionsI {
   day: number;
   flags?: string[];
   input?: string;
-  example: boolean;
+  example: boolean | string;
   language?: string;
   watch: boolean;
   forceDownload?: boolean;
@@ -29,7 +29,7 @@ const runCommand = new Command()
   .option('-d --day <day>', 'day', minMaxValueParser({ min: 1, max: 25 }), new Date().getDate())
   .option('-f --flags <flags...>', 'parse flags to the challenge')
   .option('-i --input <path>', `specify path to a custom input`)
-  .option('-e --example', `use _example suffixed input`, false)
+  .option('-e --example [name]', `use _example suffixed input, optional provide an example name if there are multiple`, false)
   .addOption(new Option('-l --language <language>', 'specify another language, defaults to existing files js then py is tried').choices(getAvailableLangs()))
   .option('-w --watch', 'run in watch mode', false)
   .option('-fd --force-download', `force the download of the input file`)
@@ -37,6 +37,16 @@ const runCommand = new Command()
   .option('-sa --save-answer', 'save the answer of this run for later validation')
   .action(async ({ year, day, flags, input, example, language, watch, forceDownload, check, saveAnswer }: OptionsI) => {
     const solutions = (await getAllSolutionsForYear(year)).filter(({ day: d }) => d === day);
+
+    // use the example too if the input flag is set to example
+    if (input && input.startsWith("example") && path.basename(input) === input) {
+      example = true;
+
+      if (input.includes("_")) {
+        example = input.split("_").slice(1).join("_");
+      }
+      input = undefined;
+    }
 
     // resolve lang and puzzle path
     let puzzleFile: SolutionT | undefined;
@@ -133,7 +143,7 @@ interface RunPuzzleI {
   day: number;
   year: number;
   check: boolean;
-  example: boolean;
+  example: boolean | string;
   customInputPath?: string;
   saveAnswer?: boolean;
   runner: Runner;
@@ -160,7 +170,7 @@ async function runPuzzle({ day, year, check, example, customInputPath, saveAnswe
   const saveKey = getSaveKey({ day, year, example, inputPath: customInputPath });
 
   if (check) {
-    const answers = await getAnswers(year, saveKey);
+    const answers = await getAnswers(year, example, saveKey);
 
     const checkP = (answers: AnswerT, res: AnswerT, i: 0 | 1) => {
       const result = checkPart(answers, res, i);
@@ -188,17 +198,9 @@ async function runPuzzle({ day, year, check, example, customInputPath, saveAnswe
   }
 
   if (saveAnswer && res) {
-    let currentAnswers = await getAnswers(year);
+    const answer = await setAnswer(year, saveKey, example, res);
 
-    if (!(currentAnswers[saveKey])) currentAnswers[saveKey] = [null, null];
-
-    if (res[0]) currentAnswers[saveKey][0] = `${res[0]}`;
-    if (res[1]) currentAnswers[saveKey][1] = `${res[1]}`;
-
-    const answerFilePath = getAnswerFilePath(year);
-    await fs.promises.writeFile(answerFilePath, JSON.stringify(currentAnswers, null, 2), { encoding: "utf-8" });
-
-    console.log(`${chalk.green("✔")} Answers saved for ${chalk.green(year)}/${chalk.green(day)}: ${JSON.stringify(currentAnswers[saveKey])}`);
+    console.log(`${chalk.green("✔")} Answers saved for ${chalk.green(year)}/${chalk.green(day)}: ${JSON.stringify(answer)}`);
   }
 
   process.stderr.write(chalk.green(`✔ Succeeded in ${t}ms\n`));

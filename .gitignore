@@ -105,7 +105,11 @@ dist
 
 # ignore input since Eric Wastl dont like that we publish it
 # see https://twitter.com/ericwastl/status/1465805354214830081
-.input/
+.input/*/*
+!.input/*/*_example*.txt
+!.input/*/answers_examples.json
 
 .idea/
 __pycache__
+
+.DS_Store

@@ -17,6 +17,9 @@ def solve(p2=False):
                     if l.startswith(w, i):
                         nums.append(str(n + 1))
                         break
+        if len(nums) == 0:
+            print("-")
+            return # don't error if run with second example input
 
         su.append(int(nums[0] + nums[-1]))
 

@@ -30,7 +30,7 @@ const allCommand = new Command()
     console.log(headingTable.toString().trim());
 
     let time = 0;
-    const answers = await getAnswers(year);
+    const answers = await getAnswers(year, example);
 
     // group by day
     const solutions = allSolutions.reduce<Record<number, typeof allSolutions>>((acc, solution) => {
@@ -65,7 +65,7 @@ const allCommand = new Command()
         return { res, t };
       });
 
-      const k = getSaveKey({ day: parseInt(day), example: example });
+      const k = getSaveKey({ day: parseInt(day), year, example: example });
       const solution = answers[k] || [null, null];
       const solutionStrArr = solution.map(x => chalk.blue(x) || chalk.grey("N/A"));
 

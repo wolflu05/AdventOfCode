@@ -27,5 +27,5 @@ const solve = (inp, p2 = false) => {
   }).reduce((a, b) => a + b);
 }
 
-console.log(solve(list))
+console.log(solve(list) || "-") // don't error if run with second example input
 console.log(solve(list, true))

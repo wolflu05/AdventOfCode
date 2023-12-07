@@ -12,6 +12,15 @@ export function throwError(message: any) {
   return process.exit(1);
 }
 
+export function throwWarning(message: any) {
+  if (process.argv.includes("a") || process.argv.includes("all")) {
+    return; // don't throw warnings in all mode
+  }
+
+  console.error(chalk.yellow("Warning:"), message);
+}
+
+
 export const getTimeString = (timeInMs: number) => {
   const SECOND = 1000;
   const MINUTE = SECOND * 60;
@@ -36,7 +45,8 @@ export const textToArray = (text: string, trim = true) => trim ? text.split('\n'
 export const round = (x: number, dp: number) => Math.round(x * parseInt('1' + '0'.repeat(dp))) /
   parseInt('1' + '0'.repeat(dp));
 
-export function getInputFilePath(year: number, day: number, example?: boolean, customInputPath?: string) {
+export function getInputFilePath(year: number, day: number, example?: boolean | string, customInputPath?: string) {
+  const p = path.join(baseFolder, '.input', `${year}`);
   let postfix = "";
 
   if (customInputPath) {
@@ -52,13 +62,31 @@ export function getInputFilePath(year: number, day: number, example?: boolean, c
     postfix += customInputPath;
   }
 
-  if (example) postfix += "example"
+  if (example) {
+    if (typeof example === "string") {
+      postfix += `example_${example}`
+    } else if (typeof example === "boolean") {
+      // try to find the first matching example
+      const startName = `${day}_example`;
+      const examples = fs.readdirSync(p).filter(f => f.startsWith(startName));
+      const exampleNames = examples.map(e => e.replace(/\d+_example_?(.*)\.txt/, "$1")).sort();
+      if (exampleNames.length > 0) {
+        postfix += exampleNames[0] ? "example_" + exampleNames[0] : "example";
 
-  const p = path.join(baseFolder, '.input', `${year}`);
-  const filePath = path.join(
-    p,
-    `${postfix ? `${day}_${postfix}` : day}` + '.txt'
-  );
+        if (exampleNames.length > 1) {
+          throwWarning(`There is more than one example (${exampleNames.join(", ")}) found in ${path.relative(baseFolder, p)}. Choosing the first: '${exampleNames[0]}'`);
+        }
+      } else {
+        return throwError(`Example '${example}' cannot be found in ${path.relative(baseFolder, p)}.`);
+      }
+    }
+  }
+
+  const filePath = path.join(p, `${postfix ? `${day}_${postfix}` : day}` + '.txt');
+  if (!fs.existsSync(filePath)) {
+    throwError(`File "${path.relative(baseFolder, filePath)}" not found.`);
+  }
+
   return filePath;
 }
 
@@ -68,7 +96,7 @@ export const getOrCreateInput = async ({
   cache = true,
   example = false,
   customInputPath
-}: { year: number, day: number, cache?: boolean, example: boolean, customInputPath?: string }) => {
+}: { year: number, day: number, cache?: boolean, example: boolean | string, customInputPath?: string }) => {
   const filePath = getInputFilePath(year, day, example, customInputPath);
 
   if (cache && fs.existsSync(filePath)) {
@@ -91,15 +119,15 @@ export const getOrCreateInput = async ({
   return filePath;
 };
 
-export function getAnswerFilePath(year: number) {
-  return path.join(baseFolder, ".", ".input", `${year}`, "answers.json");
+export function getAnswerFilePath(year: number, example: boolean | string) {
+  return path.join(baseFolder, ".", ".input", `${year}`, example ? "answers_examples.json" : "answers.json");
 }
 
 export type AnswerT = [null | string, null | string]
-export async function getAnswers(year: number): Promise<Record<string, AnswerT>>;
-export async function getAnswers(year: number, key?: string): Promise<AnswerT>;
-export async function getAnswers(year: number, key?: string) {
-  const answerFilePath = getAnswerFilePath(year);
+export async function getAnswers(year: number, example: boolean | string): Promise<Record<string, AnswerT>>;
+export async function getAnswers(year: number, example: boolean | string, key?: string): Promise<AnswerT>;
+export async function getAnswers(year: number, example: boolean | string, key?: string) {
+  const answerFilePath = getAnswerFilePath(year, example);
   let answers: Record<string, AnswerT> = {};
   if (fs.existsSync(answerFilePath)) {
     answers = JSON.parse(await fs.promises.readFile(answerFilePath, { encoding: "utf-8" }));
@@ -110,10 +138,40 @@ export async function getAnswers(year: number, key?: string) {
   return answers;
 }
 
-export function getSaveKey({ day, year, example, inputPath }: { day: number, year?: number, example: boolean, inputPath?: string }) {
+export async function setAnswer(year: number, saveKey: string, example: boolean | string, answers: AnswerT) {
+  let currentAnswers = await getAnswers(year, example);
+
+  if (!(currentAnswers[saveKey])) currentAnswers[saveKey] = [null, null];
+
+  if (answers[0]) currentAnswers[saveKey][0] = `${answers[0]}`;
+  if (answers[1]) currentAnswers[saveKey][1] = `${answers[1]}`;
+
+  const answerFilePath = getAnswerFilePath(year, example);
+  await fs.promises.writeFile(answerFilePath, JSON.stringify(currentAnswers, null, 2), { encoding: "utf-8" });
+
+  return currentAnswers[saveKey];
+}
+
+export function getSaveKey({ day, year, example, inputPath }: { day: number, year: number, example: boolean | string, inputPath?: string }) {
   let key = `${day}`;
-  if (example || inputPath === "example") key += "_example";
-  else if (inputPath && year) key = getInputFilePath(year, day, example, inputPath);
+  if (inputPath) {
+    key = getInputFilePath(year, day, example, inputPath);
+  }
+
+  if (example) {
+    if (typeof example === "string") {
+      key += `_${example}`;
+    } else if (typeof example === "boolean") {
+      // try to find the first matching example
+      const p = path.join(baseFolder, '.input', `${year}`);
+      const startName = `${day}_example`;
+      const examples = fs.readdirSync(p).filter(f => f.startsWith(startName));
+      const exampleNames = examples.map(e => e.replace(/\d+_example_?(.*)\.txt/, "$1")).sort();
+      if (exampleNames.length > 0) {
+        key += exampleNames[0] ? "_" + exampleNames[0] : ""
+      }
+    }
+  }
 
   return key;
 }
