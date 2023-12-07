@@ -7,7 +7,6 @@
     "aoc": "./dist/index.js"
   },
   "scripts": {
-    "watch": "npx nodemon --ext \"py,txt\" --quiet aoc --",
     "dev": "tsc --watch",
     "build": "tsc",
     "postinstall": "npm run build"
