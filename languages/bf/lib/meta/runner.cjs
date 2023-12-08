@@ -1,7 +1,7 @@
 const fs = require("fs");
 const { Runner } = require("../../../../cli/dist/runner");
-const { Braingoat } = require("@braingoat/compiler");
-const { run, Interpreter } = require("./brainfuck");
+const { Braingoat } = require("@wolflu05/braingoat");
+const { run } = require("./brainfuck");
 
 const freshRequire = (file) => {
   const resolvedFile = require.resolve(file);

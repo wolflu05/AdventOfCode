@@ -1,5 +1,5 @@
 const run = (code, input, size) => {
-  const mem = new Array(size).fill(0);
+  const mem = new Uint8Array(size).fill(0);
 
   let mp = 0;
   let ip = 0;
