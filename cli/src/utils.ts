@@ -45,7 +45,7 @@ export const textToArray = (text: string, trim = true) => trim ? text.split('\n'
 export const round = (x: number, dp: number) => Math.round(x * parseInt('1' + '0'.repeat(dp))) /
   parseInt('1' + '0'.repeat(dp));
 
-export function getInputFilePath(year: number, day: number, example?: boolean | string, customInputPath?: string) {
+export function getInputFilePath(year: number, day: number, example?: boolean | string, customInputPath?: string, check = true) {
   const p = path.join(baseFolder, '.input', `${year}`);
   let postfix = "";
 
@@ -76,14 +76,16 @@ export function getInputFilePath(year: number, day: number, example?: boolean | 
         if (exampleNames.length > 1) {
           throwWarning(`There is more than one example (${exampleNames.join(", ")}) found in ${path.relative(baseFolder, p)}. Choosing the first: '${exampleNames[0]}'`);
         }
-      } else {
+      } else if (check) {
         return throwError(`Example '${example}' cannot be found in ${path.relative(baseFolder, p)}.`);
+      } else {
+        postfix += "example";
       }
     }
   }
 
   const filePath = path.join(p, `${postfix ? `${day}_${postfix}` : day}` + '.txt');
-  if (!fs.existsSync(filePath)) {
+  if (check && !fs.existsSync(filePath)) {
     throwError(`File "${path.relative(baseFolder, filePath)}" not found.`);
   }
 

@@ -85,7 +85,7 @@ async function create(name: string | undefined, { year, day, language }: { year:
 
     console.log(`${chalk.green("✔ Successfully created:")} ${path.relative(baseFolder, filename)}`);
 
-    const exampleFilePath = getInputFilePath(year, day, true);
+    const exampleFilePath = getInputFilePath(year, day, true, undefined, false);
     const exampleDirPath = path.dirname(exampleFilePath);
     if (!fs.existsSync(exampleDirPath)) {
       await fs.promises.mkdir(exampleDirPath, { recursive: true });

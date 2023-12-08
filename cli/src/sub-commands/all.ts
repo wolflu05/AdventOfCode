@@ -15,7 +15,7 @@ const allCommand = new Command()
 
     const generateTable = (top = true) => {
       const table = new AsciiTable3()
-        .setWidths([10, 25, 15, 15, ...availableLangs.map(_ => 15)])
+        .setWidths([10, 28, 18, 18, ...availableLangs.map(_ => 15)])
         .setWrappings([false, false, true, true, ...availableLangs.map(_ => false)])
 
       const style = table.getStyle();
@@ -41,8 +41,6 @@ const allCommand = new Command()
 
     for (const [day, files] of Object.entries(solutions)) {
       const promises = files.map(async (f) => {
-        const startTime = performance.now();
-
         const inputPath = await getOrCreateInput({
           year,
           day: parseInt(day),
@@ -57,6 +55,8 @@ const allCommand = new Command()
           stdout: null,
           stderr: null,
         });
+
+        const startTime = performance.now();
 
         const res = await runner.run();
 
