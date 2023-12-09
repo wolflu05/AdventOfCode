@@ -99,7 +99,7 @@ export const getOrCreateInput = async ({
   example = false,
   customInputPath
 }: { year: number, day: number, cache?: boolean, example: boolean | string, customInputPath?: string }) => {
-  const filePath = getInputFilePath(year, day, example, customInputPath);
+  const filePath = getInputFilePath(year, day, example, customInputPath, false);
 
   if (cache && fs.existsSync(filePath)) {
     return filePath;

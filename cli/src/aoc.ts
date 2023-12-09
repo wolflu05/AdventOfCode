@@ -69,16 +69,16 @@ export const getAocExample = (root: HTMLElement): null | string => {
     const pres = root.querySelectorAll("pre");
 
     for (const pre of pres) {
-      if (pre.previousElementSibling.innerText.trim() === "For example") {
-        return pre.firstChild.innerText;
+      if (pre.previousElementSibling?.innerText.trim() === "For example") {
+        return pre.firstChild?.innerText || null;
       }
     }
 
     if (pres.length > 0) {
-      return pres[0].firstChild.innerText;
+      return pres[0].firstChild?.innerText || null;
     }
   } catch (err) {
-    console.log(chalk.red("Error:"), err)
+    console.log(chalk.red("Error:"), "Cannot fetch example from site\n", `${err}`)
   }
 
   return null;
