@@ -45,7 +45,7 @@ def iterate_positions(d1: int, d2: int, positions: Union[list[POSITION_TYPE], li
         # add fallback if pos name is defined
         pos_name = None
         if type(_d1) == tuple:
-            _d1, _d2, pos_name = *_d1, d2
+            _d1, _d2, pos_name = *_d1, _d2
 
         dd1, dd2 = d1 + _d1, d2 + _d2
 
