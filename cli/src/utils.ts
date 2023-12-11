@@ -181,6 +181,7 @@ export function getSaveKey({ day, year, example, inputPath }: { day: number, yea
 export function checkPart(answers: AnswerT, res: AnswerT, i: 0 | 1) {
   if (!answers[i]) return null;
   if (!res[i]) return undefined;
+  if (res[i] === "-") return true; // part should be ignored, so it validates as true
 
   if (`${answers[i]}` !== `${res[i]}`) {
     return false;
