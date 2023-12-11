@@ -32,6 +32,19 @@ while(char) {
     }
   }
 
+  if((char >= 65)) { /* check if char is an uppercase letter */
+    if((char <= 90)) {
+      /* char is an uppercase letter */
+    }
+  }
+
+  if((char >= 97)) { /* check if char is a lowercase letter */
+    if((char <= 122)) {
+      /* char is a lowercase letter */
+    }
+  }
+
+
   is_space_or_lf = 0
 
   if((char == 10)) { /* new line */
