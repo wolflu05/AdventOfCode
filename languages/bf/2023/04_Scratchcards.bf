@@ -1,19 +1,5 @@
-const fs = require("fs");
+/* Usual execution time: ~40s */
 
-/**
- * This program doesn't need any preprocessing, the input should be the
- * complete puzzle input you get from AoC with an empty line on the end.
- * 
- * The program takes ~40s to compute the result for part 1.
- * The first line is the result for part 1, the second a "-", as part 2 is not
- * yet implemented.
- */
-module.exports.getInput = (inputPath) => {
-  const numbers = fs.readFileSync(inputPath, { encoding: "utf-8" });
-  return numbers;
-}
-
-module.exports.code = `
 IntList<10> winning_numbers = [0,0,0,0,0,0,0,0,0,0]
 Int winning_num_idx = 0
 
@@ -157,4 +143,3 @@ for (num, p1) {
 }
 print(10)
 print(45)
-`;

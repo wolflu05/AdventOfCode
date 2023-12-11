@@ -1,19 +1,5 @@
-const fs = require("fs");
+/* Usual execution time: ~13s */
 
-/**
- * This program doesn't need any preprocessing, the input should be the
- * complete puzzle input you get from AoC with an empty line on the end.
- * 
- * The program takes ~13s to compute the result for part 1.
- * The first line is the result for part 1, the second a "-", as part 2 is not
- * yet implemented.
- */
-module.exports.getInput = (inputPath) => {
-  const input = fs.readFileSync(inputPath, { encoding: "utf-8" });
-  return input;
-}
-
-module.exports.code = `
 /* Input state  
   0 - game id not set
   1 - getting color count
@@ -150,4 +136,3 @@ for (num, p1) {
 }
 print(10)
 print(45)
-`;

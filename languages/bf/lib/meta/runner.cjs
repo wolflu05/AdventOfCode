@@ -17,9 +17,9 @@ const freshRequire = (file) => {
 
 class BFRunner extends Runner {
   async run() {
-    const program = freshRequire(this.programFilename);
+    const bgCode = fs.readFileSync(this.programFilename, { encoding: "utf-8" });
 
-    const bg = new Braingoat(program.code);
+    const bg = new Braingoat(bgCode);
     bg.compile();
 
     const outPath = this.programFilename.replace(/\.bf$/, ".b");
@@ -28,7 +28,7 @@ class BFRunner extends Runner {
     fs.writeFileSync(outPath, code, { encoding: "utf-8" });
 
     this.log(`Brainfuck output file written to ${outPath}`);
-    const input = program.getInput(this.inputPath);
+    const input = fs.readFileSync(this.inputPath, { encoding: "utf-8" });
 
     const res = run(code, input, 30_000);
     this.log(res);
