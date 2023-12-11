@@ -208,7 +208,9 @@ export function minMaxValueParser({ min, max }: { min?: number, max?: number }) 
 
 export const getAvailableLangs = () => {
   const languagesFolderPath = path.resolve(baseFolder, "languages");
-  const availableLangs = fs.readdirSync(languagesFolderPath);
+  const availableLangs = fs.readdirSync(languagesFolderPath, { withFileTypes: true })
+    .filter(f => f.isDirectory())
+    .map(f => f.name);
 
   return availableLangs;
 }

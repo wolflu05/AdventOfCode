@@ -9,9 +9,10 @@ const allCommand = new Command()
   .alias("a")
   .option('-y --year <year>', 'year', minMaxValueParser({ min: 2015 }), new Date().getFullYear())
   .option('-e --example', `use _example suffixed input`, false)
-  .action(async ({ year, example }: { year: number, example: boolean }) => {
-    const allSolutions = await getAllSolutionsForYear(year);
-    const availableLangs = getAvailableLangs();
+  .option('-il --ignore-langs <lang...>', 'ignore some languages')
+  .action(async ({ year, example, ignoreLangs }: { year: number, example: boolean, ignoreLangs?: string[] }) => {
+    const allSolutions = (await getAllSolutionsForYear(year)).filter(({ lang }) => !ignoreLangs?.includes(lang));
+    const availableLangs = getAvailableLangs().filter(l => !ignoreLangs?.includes(l));
 
     const generateTable = (top = true) => {
       const table = new AsciiTable3()
