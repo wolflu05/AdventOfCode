@@ -60,3 +60,9 @@ def iterate_positions(d1: int, d2: int, positions: Union[list[POSITION_TYPE], li
         abs_positions.append(pos)
 
     return abs_positions
+
+def rotate_left(matrix):
+    return ["".join(c) for c in zip(*matrix)][::-1]
+
+def rotate_right(matrix):
+    return ["".join(c[::-1]) for c in zip(*matrix)]
