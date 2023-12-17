@@ -1,6 +1,7 @@
 import sys
 from .grid import *
 from .lists import *
+from .ansi import *
 
 def get_input(strip=True):
     inp = []

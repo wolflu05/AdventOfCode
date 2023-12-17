@@ -38,7 +38,7 @@ def check_index_exists(matrix: list, *dim: list[int]):
 
     return True
 
-def iterate_positions(d1: int, d2: int, positions: Union[list[POSITION_TYPE], list[tuple[POSITION_TYPE, str]]], matrix: Optional[list]):
+def iterate_positions(d1: int, d2: int, positions: Union[list[POSITION_TYPE], list[tuple[POSITION_TYPE, str]]], matrix: Optional[list] = None):
     abs_positions: list[POSITION_TYPE] = []
 
     for _d1, _d2 in positions:
