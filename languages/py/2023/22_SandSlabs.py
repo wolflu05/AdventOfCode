@@ -33,7 +33,7 @@ def fall(C: list[Cube]):
                 if c.z1 >= c2.z2+1:
                     if f < c2.z2:
                         f = c2.z2
-            d = c.z1-f-1 # distance this cube can fall
+            d = c.z1-f-1 # distance this cube can fall down
 
             if d > 0:
                 c.z1-=d
@@ -69,18 +69,17 @@ p2=0
 
 # start at each cube in the graph and count how many other cubes are influenced if that cube is disintegrated 
 for c in C:
-    Q = [c]
-    F = set()
+    Q = collections.deque([c])
+    F = set() # store all cubes that will fall in this case
 
     cnt = 0
-    while len(Q):
-        current_cube = Q.pop(0)
+    while Q:
+        current_cube = Q.popleft()
         F.add(current_cube)
 
         for cube_is_support_for in IG[current_cube]:
-            # check if current_cube is the only support for cube_is_support_for
+            # check if only bricks from the F set support the cube_is_support_for
             if all(a in F for a in G[cube_is_support_for]):
-                assert current_cube in G[cube_is_support_for]
                 Q.append(cube_is_support_for)
                 cnt += 1
 
