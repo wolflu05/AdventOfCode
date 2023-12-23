@@ -3,7 +3,11 @@ const { ExecRunner } = require("../../../../cli/dist/runner.js");
 
 class PythonRunner extends ExecRunner {
   getCmd() {
-    return "python3"
+    if (this.flags.includes("pypy")) {
+      return "pypy3";
+    }
+
+    return "python3";
   }
 
   getArgs() {
