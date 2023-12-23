@@ -52,6 +52,20 @@ def solve(p2=False):
         for k,v in IG.items():
             G[k].update(v)
 
+        # - output mermaid diagram
+        # h = set()
+        # dd = None
+        # print("graph TD")
+        # for k,v in [(src, G[src]),*G.items()]:
+        #     for n,d in v:
+        #         if dest == n:
+        #             dd = k,d
+        #             continue
+        #         if (k,n,d) not in h and (n,k,d) not in h:
+        #             print(f"    {k[0]},{k[1]} ---|{d}| {n[0]},{n[1]}")
+        #             h.add((k,n,d))
+        # print(f"    {dd[0][0]},{dd[0][1]} ---|{dd[1]}| {dest[0]},{dest[1]}")
+
     Q = [(0,*src,0,set())]
     P = set()
     while Q:
