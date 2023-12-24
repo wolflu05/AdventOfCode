@@ -94,6 +94,7 @@ const runCommand = new Command()
       language: puzzleFile.lang,
       programFilename: puzzleFile.path,
       inputPath: inputPath,
+      example: !!example,
       flags: flags || [],
     });
 

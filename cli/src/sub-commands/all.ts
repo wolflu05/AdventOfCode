@@ -52,6 +52,7 @@ const allCommand = new Command()
           language: f.lang,
           programFilename: f.path,
           inputPath: inputPath,
+          example: example,
           flags: [],
           stdout: null,
           stderr: null,

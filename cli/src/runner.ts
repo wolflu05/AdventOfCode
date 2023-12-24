@@ -8,6 +8,7 @@ import { baseFolder } from "./constants";
 interface RunnerConstructorI {
   programFilename: string;
   inputPath: string;
+  example: boolean;
   flags: string[];
   language: string;
   stdout?: null | fs.WriteStream;
@@ -17,14 +18,16 @@ interface RunnerConstructorI {
 export class Runner {
   programFilename: string;
   inputPath: string;
+  example: boolean;
   flags: string[];
   language: string;
   stdout?: null | fs.WriteStream;
   stderr?: null | fs.WriteStream;
 
-  constructor({ programFilename, inputPath, flags, language, stdout, stderr }: RunnerConstructorI) {
+  constructor({ programFilename, inputPath, example, flags, language, stdout, stderr }: RunnerConstructorI) {
     this.programFilename = programFilename;
     this.inputPath = inputPath;
+    this.example = example;
     this.flags = flags;
     this.language = language;
     this.stdout = stdout;
@@ -43,7 +46,7 @@ export class Runner {
     ]
   }
 
-  kill(): Promise<void> | void { }
+  kill(): Promise<void> | void {}
 }
 
 export class ExecRunner extends Runner {
@@ -61,6 +64,7 @@ export class ExecRunner extends Runner {
     return {
       ...process.env,
       AOC_FLAGS: this.flags.join(","),
+      AOC_EXAMPLE: `${this.example}`,
     }
   }
 

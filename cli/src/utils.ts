@@ -246,6 +246,7 @@ export async function getRunner({
   language,
   programFilename,
   inputPath,
+  example = false,
   flags,
   stdout = process.stdout,
   stderr = process.stderr,
@@ -253,6 +254,7 @@ export async function getRunner({
   language: string,
   programFilename: string,
   inputPath: string,
+  example?: boolean,
   flags: string[],
   stdout?: any;
   stderr?: any;
@@ -268,6 +270,7 @@ export async function getRunner({
     const runner: Runner = new Runner({
       programFilename,
       inputPath,
+      example,
       flags,
       language,
       stdout,

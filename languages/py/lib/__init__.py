@@ -1,4 +1,4 @@
-import sys
+import sys, os
 from .grid import *
 from .lists import *
 from .ansi import *
@@ -9,3 +9,5 @@ def get_input(strip=True):
         inp = [l.strip() if strip else l for l in f.readlines()]
 
     return inp
+
+IS_EXAMPLE = os.getenv("AOC_EXAMPLE", "false") == "true"
