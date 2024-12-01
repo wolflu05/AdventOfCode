@@ -103,6 +103,8 @@ dist
 # TernJS port file
 .tern-port
 
+*.json
+
 # ignore input since Eric Wastl dont like that we publish it
 # see https://twitter.com/ericwastl/status/1465805354214830081
 .input/*/*
@@ -113,5 +115,4 @@ dist
 __pycache__
 
 .DS_Store
-*.json
 *.swp

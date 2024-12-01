@@ -2,6 +2,19 @@
 
 This repository contains my [Advent of code](https://adventofcode.com) solutions solved in different programming languages.
 
+## [2024](https://adventofcode.com/2024)
+
+**Languages: [<img height="14" alt="py" src="languages/py/lib/meta/logo.svg"/> Python](languages/py/2024): 1**
+
+| Mo | Tu | We | Th | Fr | Sa | Su |
+| :-: | :-: | :-: | :-: | :-: | :-: | :-: |
+|  |   |   |   |   |  | **[1](https://adventofcode.com/2024/day/1)** [<img height="14" alt="py" src="languages/py/lib/meta/logo.svg"/>](languages/py/2024/01_HistorianHysteria.py) |
+| 2 | 3 | 4 | 5 | 6 | 7 | 8  |
+| 9 | 10 | 11 | 12 | 13 | 14 | 15  |
+| 16 | 17 | 18 | 19 | 20 | 21 | 22  |
+| 23 | 24 | 25 |   |   |   |   |
+
+
 ## [2023](https://adventofcode.com/2023)
 
 **Languages: [<img height="14" alt="py" src="languages/py/lib/meta/logo.svg"/> Python](languages/py/2023): 25, [<img height="14" alt="bf" src="languages/bf/lib/meta/logo.svg"/> Brainfuck](languages/bf/2023): 4, [<img height="14" alt="js" src="languages/js/lib/meta/logo.svg"/> JavaScript](languages/js/2023): 2**
