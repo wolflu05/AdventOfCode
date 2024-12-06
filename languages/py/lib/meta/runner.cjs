@@ -21,6 +21,13 @@ class PythonRunner extends ExecRunner {
       PYTHONUNBUFFERED: 1,
     }
   }
+
+  getWatchFilePatterns() {
+    return [
+      ...super.getWatchFilePatterns(),
+      "!**/__pycache__/**"
+    ]
+  }
 }
 
 module.exports = PythonRunner;

@@ -66,3 +66,6 @@ def rotate_left(matrix):
 
 def rotate_right(matrix):
     return ["".join(c[::-1]) for c in zip(*matrix)]
+
+def rotate_direction(current, direction=1, allowed_directions="URDL"):
+    return allowed_directions[(allowed_directions.index(current) + direction) % 4]
