@@ -4,13 +4,13 @@ This repository contains my [Advent of code](https://adventofcode.com) solutions
 
 ## [2024](https://adventofcode.com/2024)
 
-**Languages: [<img height="14" alt="py" src="languages/py/lib/meta/logo.svg"/> Python](languages/py/2024): 9**
+**Languages: [<img height="14" alt="py" src="languages/py/lib/meta/logo.svg"/> Python](languages/py/2024): 10**
 
 | Mo | Tu | We | Th | Fr | Sa | Su |
 | :-: | :-: | :-: | :-: | :-: | :-: | :-: |
 |  |   |   |   |   |  | **[1](https://adventofcode.com/2024/day/1)** [<img height="14" alt="py" src="languages/py/lib/meta/logo.svg"/>](languages/py/2024/01_HistorianHysteria.py) |
 | **[2](https://adventofcode.com/2024/day/2)** [<img height="14" alt="py" src="languages/py/lib/meta/logo.svg"/>](languages/py/2024/02_RedNosedReports.py)| **[3](https://adventofcode.com/2024/day/3)** [<img height="14" alt="py" src="languages/py/lib/meta/logo.svg"/>](languages/py/2024/03_MullItOver.py)| **[4](https://adventofcode.com/2024/day/4)** [<img height="14" alt="py" src="languages/py/lib/meta/logo.svg"/>](languages/py/2024/04_CeresSearch.py)| **[5](https://adventofcode.com/2024/day/5)** [<img height="14" alt="py" src="languages/py/lib/meta/logo.svg"/>](languages/py/2024/05_PrintQueue.py)| **[6](https://adventofcode.com/2024/day/6)** [<img height="14" alt="py" src="languages/py/lib/meta/logo.svg"/>](languages/py/2024/06_GuardGallivant.py)| **[7](https://adventofcode.com/2024/day/7)** [<img height="14" alt="py" src="languages/py/lib/meta/logo.svg"/>](languages/py/2024/07_BridgeRepair.py)| **[8](https://adventofcode.com/2024/day/8)** [<img height="14" alt="py" src="languages/py/lib/meta/logo.svg"/>](languages/py/2024/08_ResonantCollinearity.py) |
-| **[9](https://adventofcode.com/2024/day/9)** [<img height="14" alt="py" src="languages/py/lib/meta/logo.svg"/>](languages/py/2024/09_DiskFragmenter.py)| 10 | 11 | 12 | 13 | 14 | 15  |
+| **[9](https://adventofcode.com/2024/day/9)** [<img height="14" alt="py" src="languages/py/lib/meta/logo.svg"/>](languages/py/2024/09_DiskFragmenter.py)| **[10](https://adventofcode.com/2024/day/10)** [<img height="14" alt="py" src="languages/py/lib/meta/logo.svg"/>](languages/py/2024/10_HoofIt.py)| 11 | 12 | 13 | 14 | 15  |
 | 16 | 17 | 18 | 19 | 20 | 21 | 22  |
 | 23 | 24 | 25 |   |   |   |   |
 
