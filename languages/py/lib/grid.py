@@ -1,4 +1,4 @@
-from typing import Literal, Optional, Union
+from typing import Callable, Literal, Optional, Union
 
 POSITION_TYPE = tuple[int, int]
 
@@ -76,3 +76,28 @@ def print_grid(grid, fmt=lambda x, _: str(x)):
         for x, col in enumerate(row):
             out += fmt(col, (y,x))
         print(out)
+
+def print_points(p: set[tuple[int, int]] | set[tuple[int, int, str]], *, spacing=0, fmt: str | Callable[[tuple[int, int]], str]="#"):
+    min_h, max_h = min(c[0] for c in p) - spacing, max(c[0] for c in p) + spacing
+    min_w, max_w = min(c[1] for c in p) - spacing, max(c[1] for c in p) + spacing
+
+    MAP = {}
+    for c in p:
+        if len(c) == 2:
+            if type(fmt) == str:
+                MAP[c] = fmt
+            else:
+                MAP[c] = fmt(c)
+        elif len(c) == 3:
+            y,x,f = c
+            MAP[(y,x)] = f
+
+    for y in range(min_h, max_h+1):
+        for x in range(min_w, max_w+1):
+            if (y,x) in MAP:
+                print(MAP[(y,x)], end="")
+            elif (y,x) == (0,0):
+                print("x", end="")
+            else:
+                print(".", end="")
+        print()
