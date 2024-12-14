@@ -77,7 +77,7 @@ def print_grid(grid, fmt=lambda x, _: str(x)):
             out += fmt(col, (y,x))
         print(out)
 
-def print_points(p: set[tuple[int, int]] | set[tuple[int, int, str]], *, spacing=0, fmt: str | Callable[[tuple[int, int]], str]="#"):
+def print_points(p: set[tuple[int, int]] | set[tuple[int, int, str]], *, spacing=0, fmt: str | Callable[[tuple[int, int]], str]="#", return_grid=False):
     min_h, max_h = min(c[0] for c in p) - spacing, max(c[0] for c in p) + spacing
     min_w, max_w = min(c[1] for c in p) - spacing, max(c[1] for c in p) + spacing
 
@@ -92,12 +92,18 @@ def print_points(p: set[tuple[int, int]] | set[tuple[int, int, str]], *, spacing
             y,x,f = c
             MAP[(y,x)] = f
 
+    res = ""
     for y in range(min_h, max_h+1):
         for x in range(min_w, max_w+1):
             if (y,x) in MAP:
-                print(MAP[(y,x)], end="")
+                res += str(MAP[(y,x)])
             elif (y,x) == (0,0):
-                print("x", end="")
+                res += "x"
             else:
-                print(".", end="")
-        print()
+                res += "."
+        res+="\n"
+
+    if not return_grid:
+        print(res.strip())
+    else:
+        return res.strip()
