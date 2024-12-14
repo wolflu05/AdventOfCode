@@ -1,5 +1,15 @@
+# aoc:
+#   flags: png
+#   pypy: false
+# ---
+
 import collections, functools, numpy
+import tqdm
 from lib import *
+
+CREATE_PNG = "png" in FLAGS
+if CREATE_PNG:
+    from PIL import Image
 
 inp = get_input()
 
@@ -26,7 +36,8 @@ def safety_factor(C):
     return functools.reduce(int.__mul__, Q)
 
 VAR = {}
-for t in range(1,max(W*H, 100)+1):
+images = []
+for t in tqdm.tqdm(range(1,max(W*H, 100)+1)):
     C = collections.Counter()
 
     for i, (px,py,vx,vy) in R.items():
@@ -35,10 +46,20 @@ for t in range(1,max(W*H, 100)+1):
         R[i] = (px,py,vx,vy)
         C[py,px] += 1
 
+    if CREATE_PNG:
+        img = Image.new("1", (W,H), "black")
+        for py,px in C:
+            img.putpixel((px,py), 1)
+        images.append(img)
+
     if t == 100:
         print(safety_factor(C))
 
     VAR[t] = functools.reduce(numpy.add, numpy.std(list(C.keys()), axis=0))
 
 # lowest standard derivation should be the time where the tree is visible
-print(min(VAR.items(), key=lambda x: x[1])[0])
+p2 = min(VAR.items(), key=lambda x: x[1])[0]
+print(p2)
+
+if CREATE_PNG:
+    images[p2-1].save("./out.png")

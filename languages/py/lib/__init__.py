@@ -11,3 +11,4 @@ def get_input(strip=True):
     return inp
 
 IS_EXAMPLE = os.getenv("AOC_EXAMPLE", "false") == "true"
+FLAGS = [x.lower() for x in os.getenv("AOC_FLAGS", "").split(",") if x]
