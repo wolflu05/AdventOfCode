@@ -107,3 +107,12 @@ def print_points(p: set[tuple[int, int]] | set[tuple[int, int, str]], *, spacing
         print(res.strip())
     else:
         return res.strip()
+
+def find_grid(grid, char):
+    for y, row in enumerate(grid):
+        for x, col in enumerate(row):
+            if col == char:
+                return y, x
+
+def copy_grid(G):
+    return [[j for j in x] for x in G]
