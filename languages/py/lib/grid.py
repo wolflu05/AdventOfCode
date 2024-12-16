@@ -70,6 +70,10 @@ def rotate_right(matrix):
 def rotate_direction(current, direction=1, allowed_directions="URDL"):
     return allowed_directions[(allowed_directions.index(current) + direction) % 4]
 
+def rotate_direction_vec(current: tuple[int, int], direction=1):
+    y,x = current
+    return (x*direction, -y*direction)
+
 def print_grid(grid, fmt=lambda x, _: str(x)):
     for y, row in enumerate(grid):
         out = ""
