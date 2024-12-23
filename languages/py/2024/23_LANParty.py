@@ -12,12 +12,10 @@ for l in inp:
     G[b].add(a)
 
 def all_connected(nodes):
-    nodes = set(nodes)
-    for n in nodes:
-        for g in nodes - {n}:
-            if g not in G[n]:
-                return False
-            
+    for a,b in itertools.combinations(nodes, r=2):
+        if a not in G[b]:
+            return False
+
     return True
 
 L = len(max(G.values(), key=len))
