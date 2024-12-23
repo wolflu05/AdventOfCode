@@ -20,7 +20,7 @@ def all_connected(nodes):
             
     return True
 
-L = len(next(iter(G.values())))
+L = len(max(G.values(), key=len))
 
 p1 = None
 p2 = None
