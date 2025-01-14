@@ -10,7 +10,8 @@ const allCommand = new Command()
   .option('-y --year <year>', 'year', minMaxValueParser({ min: 2015 }), new Date().getFullYear())
   .option('-e --example', `use _example suffixed input`, false)
   .option('-il --ignore-langs <lang...>', 'ignore some languages')
-  .action(async ({ year, example, ignoreLangs }: { year: number, example: boolean, ignoreLangs?: string[] }) => {
+  .option('-f --flags <flags...>', 'parse flags to the challenge')
+  .action(async ({ year, example, ignoreLangs, flags }: { year: number, example: boolean, ignoreLangs?: string[], flags?: string[] }) => {
     const allSolutions = (await getAllSolutionsForYear(year)).filter(({ lang }) => !ignoreLangs?.includes(lang));
     const availableLangs = getAvailableLangs().filter(l => !ignoreLangs?.includes(l));
 
@@ -53,7 +54,7 @@ const allCommand = new Command()
           programFilename: f.path,
           inputPath: inputPath,
           example: example,
-          flags: [],
+          flags: flags || [],
           stdout: null,
           stderr: null,
         });
