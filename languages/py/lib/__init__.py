@@ -2,6 +2,7 @@ import sys, os
 from .grid import *
 from .lists import *
 from .ansi import *
+from .misc import *
 
 def get_input(strip=True, split_sections=False, lines_to_list=False):
     inp = []
